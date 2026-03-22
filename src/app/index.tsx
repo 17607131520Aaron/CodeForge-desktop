@@ -2,10 +2,16 @@ import React from "react";
 
 import { Outlet } from "react-router-dom";
 
-import { Layout } from "antd";
-const { Header, Sider, Content } = Layout;
+import { Layout, Menu } from "antd";
+
+import useApp from "./userApp";
+import "./index.scss";
+const { Sider, Content } = Layout;
 
 const App: React.FC = () => {
+
+  const { filteredMenuItems, handleMenuClick, handleOpenChange } = useApp();
+
   return (
     <Layout className="asp-comprehension-home" style={{ height: "100vh", overflow: "hidden" }}>
       <Sider
@@ -16,10 +22,18 @@ const App: React.FC = () => {
         collapsedWidth={80}
         trigger={null}
         width={240}
-      />
+      >
+        <Menu
+          className="asp-comprehension-home-menu-content"
+          items={filteredMenuItems}
+          mode="inline"
+          theme="light"
+          onClick={handleMenuClick}
+          onOpenChange={handleOpenChange}
+        />
+      </Sider>
 
       <Layout style={{ height: "100%", overflow: "hidden" }}>
-        <Header />
         <Content className="asp-comprehension-home-content">
           <Outlet />
         </Content>
