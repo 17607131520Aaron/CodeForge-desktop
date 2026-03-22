@@ -1,0 +1,228 @@
+{
+  // ========== 格式化配置 ==========
+  // 启用保存时自动格式化
+  "editor.formatOnSave": true,
+  // 默认使用 Prettier 作为格式化工具
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  // 要求 Prettier 必须有配置文件才生效
+  "prettier.requireConfig": true,
+  // 使用项目根目录的 Prettier 配置
+  "prettier.configPath": ".prettierrc",
+  // 不同文件类型使用 Prettier 格式化，并在保存时自动修复 ESLint/Stylelint 问题
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.codeActionsOnSave": {
+      // 先修复 ESLint 问题（包括导入顺序），再格式化
+      "source.fixAll.eslint": "explicit",
+      // 禁用 JavaScript 的 organizeImports，避免与 ESLint 的 import/order 冲突
+      "source.organizeImports": "never"
+    }
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.codeActionsOnSave": {
+      // 先修复 ESLint 问题（包括导入顺序），再格式化
+      "source.fixAll.eslint": "explicit",
+      // 禁用 JavaScript 的 organizeImports，避免与 ESLint 的 import/order 冲突
+      "source.organizeImports": "never"
+    }
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.codeActionsOnSave": {
+      // 先修复 ESLint 问题（包括导入顺序），再格式化
+      "source.fixAll.eslint": "explicit",
+      // 禁用 TypeScript 的 organizeImports，避免与 ESLint 的 import/order 冲突
+      "source.organizeImports": "never"
+    }
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.codeActionsOnSave": {
+      // 先修复 ESLint 问题（包括导入顺序），再格式化
+      "source.fixAll.eslint": "explicit",
+      // 禁用 TypeScript 的 organizeImports，避免与 ESLint 的 import/order 冲突
+      "source.organizeImports": "never"
+    }
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[html]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[css]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.codeActionsOnSave": {
+      // 先修复 Stylelint 问题，再格式化
+      "source.fixAll.stylelint": "explicit"
+    }
+  },
+  "[scss]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.codeActionsOnSave": {
+      // 先修复 Stylelint 问题，再格式化
+      "source.fixAll.stylelint": "explicit"
+    }
+  },
+  "[less]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.codeActionsOnSave": {
+      // 先修复 Stylelint 问题，再格式化
+      "source.fixAll.stylelint": "explicit"
+    }
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  // ========== 编辑器基础配置（与 Prettier 配置保持一致）==========
+  // Tab 大小为 2（与 .prettierrc 中的 tabWidth: 2 一致）
+  "editor.tabSize": 2,
+  // 使用空格而不是 Tab（与 .prettierrc 中的 useTabs: false 一致）
+  "editor.insertSpaces": true,
+  // 禁用自动检测缩进，强制使用配置
+  "editor.detectIndentation": false,
+  // 行宽标尺为 120（与 .prettierrc 中的 printWidth: 120 一致）
+  "editor.rulers": [120],
+  // 关闭自动换行
+  "editor.wordWrap": "off",
+  // 格式化模式：仅在可用时格式化修改的文件
+  "editor.formatOnSaveMode": "modificationsIfAvailable",
+
+  // ========== 文件格式配置（与 .editorconfig 和 .prettierrc 一致）==========
+  // 行尾符使用 LF（与 .prettierrc 中的 endOfLine: "lf" 一致）
+  "files.eol": "\n",
+  // 文件编码为 UTF-8
+  "files.encoding": "utf8",
+  // 保存时删除行尾空白（与 .editorconfig 一致）
+  "files.trimTrailingWhitespace": true,
+  // 文件末尾插入空行（与 .editorconfig 一致）
+  "files.insertFinalNewline": true,
+  // 删除文件末尾的多个空行
+  "files.trimFinalNewlines": true,
+
+  // ========== ESLint 配置（使用 Flat Config）==========
+  // ESLint 工作目录为项目根目录
+  "eslint.workingDirectories": ["."],
+  // 使用 ESLint Flat Config 格式（ESLint 9.x 默认支持，会自动查找 eslint.config.js）
+  "eslint.useFlatConfig": true,
+  // 需要检查的文件类型
+  "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
+  // 禁用 ESLint 作为格式化器，避免与 Prettier 冲突（格式由 Prettier 负责）
+  "eslint.format.enable": false,
+
+  // ========== Stylelint 配置 ==========
+  // Stylelint 检查的文件类型
+  "stylelint.validate": ["css", "scss", "less"],
+  // 不忽略 stylelint-disable 注释
+  "stylelint.ignoreDisables": false,
+  // 明确指定 Stylelint 配置文件路径
+  "stylelint.config": ".stylelintrc.json",
+  // Ant Design Less 相关配置
+  "less.lint.unknownAtRules": "ignore",
+  // CSS 模块支持
+  "cssModules.camelCase": true,
+
+  // ========== TypeScript 配置 ==========
+  // 使用工作区的 TypeScript 版本
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  // TypeScript 自动导入配置
+  "typescript.preferences.importModuleSpecifier": "shortest",
+  "typescript.preferences.importModuleSpecifierEnding": "minimal",
+  "typescript.preferences.includePackageJsonAutoImports": "on",
+  "typescript.suggest.autoImports": true,
+  "typescript.suggest.completeFunctionCalls": true,
+  // TypeScript 性能优化
+  "typescript.tsserver.maxTsServerMemory": 4096,
+  "typescript.tsserver.watchOptions": {
+    "watchFile": "useFsEvents",
+    "watchDirectory": "useFsEvents"
+  },
+  // 文件移动时自动更新导入
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  // 禁用 TypeScript 的导入排序，使用 ESLint 的 import/order 规则
+  "typescript.preferences.organizeImports": false,
+
+  // ========== JavaScript 配置 ==========
+  "javascript.preferences.importModuleSpecifier": "shortest",
+  "javascript.suggest.autoImports": true,
+  "javascript.suggest.completeFunctionCalls": true,
+  "javascript.updateImportsOnFileMove.enabled": "always",
+  // 禁用 JavaScript 的导入排序，使用 ESLint 的 import/order 规则
+  "javascript.preferences.organizeImports": false,
+
+  // ========== 路径别名配置 ==========
+  "path-intellisense.mappings": {
+    "@": "${workspaceFolder}/src"
+  },
+
+  // ========== 编辑器其他配置 ==========
+  "editor.suggestSelection": "first",
+  "editor.unicodeHighlight.ambiguousCharacters": false,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": true,
+  "editor.foldingStrategy": "indentation",
+  "editor.showFoldingControls": "mouseover",
+  "editor.stickyScroll.enabled": true,
+  "editor.quickSuggestions": {
+    "strings": true
+  },
+
+  // ========== Emmet 配置 ==========
+  "emmet.includeLanguages": {
+    "typescript": "html",
+    "typescriptreact": "html"
+  },
+
+  // ========== 文件关联 ==========
+  "files.associations": {
+    "*.json": "jsonc"
+  },
+
+  // ========== 搜索排除 ==========
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/coverage": true,
+    "**/.git": true,
+    "**/pnpm-lock.yaml": true
+  },
+
+  // ========== 文件监听排除（性能优化）==========
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/.git/**": true,
+    "**/coverage/**": true,
+    "**/.vite/**": true
+  },
+
+  // ========== Git 配置 ==========
+  "git.enableSmartCommit": true,
+  "git.confirmSync": false,
+
+  // ========== Diff 编辑器配置 ==========
+  "diffEditor.ignoreTrimWhitespace": false,
+
+  // ========== 终端配置 ==========
+  "terminal.integrated.defaultProfile.osx": "zsh",
+  "terminal.integrated.cursorBlinking": true,
+  "terminal.integrated.env.osx": {
+    "NODE_ENV": "development"
+  },
+
+  // ========== 资源管理器配置 ==========
+  "explorer.compactFolders": false,
+
+  // ========== 工作区配置 ==========
+  "workbench.iconTheme": "vscode-icons"
+}
