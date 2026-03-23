@@ -1,9 +1,11 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 
 import { AppstoreOutlined, SearchOutlined } from "@ant-design/icons";
-import { Input, Layout, List, Menu } from "antd";
+import { Input, Layout, List, Menu, Spin } from "antd";
+
+import PerformanceMonitor from "@/components/PerformanceMonitorWrapper";
 
 import useApp from "./userApp";
 
@@ -13,6 +15,39 @@ import "./index.scss";
 const { Sider, Content } = Layout;
 
 const App: React.FC = () => {
+  const location = useLocation();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const isFirstRenderRef = useRef(true);
+
+  // 区分首次刷新与路由内跳转，首次渲染展示"页面刷新中"
+  useEffect(() => {
+    if (isFirstRenderRef.current) {
+      isFirstRenderRef.current = false;
+      setIsRefreshing(true);
+      setIsLoading(true);
+      const timer = window.setTimeout(() => {
+        setIsLoading(false);
+        setIsRefreshing(false);
+      }, 350);
+      return () => window.clearTimeout(timer);
+    }
+    return undefined;
+  }, []);
+
+  // 路由切换时展示短暂加载态，优化页面切换反馈
+  useEffect(() => {
+    if (isFirstRenderRef.current) {
+      return undefined;
+    }
+    setIsRefreshing(false);
+    setIsLoading(true);
+    const timer = window.setTimeout(() => {
+      setIsLoading(false);
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [location.pathname]);
+
   const {
     openKeys,
     collapsed,
@@ -110,13 +145,26 @@ const App: React.FC = () => {
             )}
           </div>
 
-          <div>底部用户内容</div>
+          {/* <div>底部用户内容</div> */}
         </div>
       </Sider>
 
       <Layout className="comprehension-content" style={{ height: "100%", overflow: "hidden" }}>
-        <Content>
-          <Outlet />
+        <Content className="comprehension-content-contentPages">
+          <div className="wrapper">
+            <Spin
+              size="large"
+              spinning={isLoading}
+              style={{ height: "100%" }}
+              tip={isRefreshing ? "页面刷新中..." : "页面加载中..."}
+            >
+              <div style={{ height: "100%" }}>
+                <PerformanceMonitor enableConsoleLog id={`Page-${location.pathname}`}>
+                  <Outlet />
+                </PerformanceMonitor>
+              </div>
+            </Spin>
+          </div>
         </Content>
       </Layout>
     </Layout>

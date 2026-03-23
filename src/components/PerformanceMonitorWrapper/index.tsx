@@ -3,14 +3,28 @@ import type { ReactNode } from "react";
 
 import { usePerformanceMonitor } from "@/hooks/usePerformanceMonitor";
 
-const PerformanceMonitorWrapper: React.FC<{ children: ReactNode }> = ({ children }) => {
+interface IPerformanceMonitorWrapperProps {
+  children: ReactNode;
+  id?: string;
+  enableConsoleLog?: boolean;
+}
+
+const PerformanceMonitorWrapper: React.FC<IPerformanceMonitorWrapperProps> = ({
+  children,
+  id,
+  enableConsoleLog = true,
+}) => {
   const { logPagePerformance } = usePerformanceMonitor();
 
   useEffect(() => {
+    if (!enableConsoleLog) {
+      return undefined;
+    }
+
     // 页面加载完成后输出性能指标
     const logPerformance = (): void => {
       setTimeout(() => {
-        logPagePerformance();
+        logPagePerformance(id);
       }, 1000);
     };
 
@@ -23,7 +37,7 @@ const PerformanceMonitorWrapper: React.FC<{ children: ReactNode }> = ({ children
     return () => {
       window.removeEventListener("load", logPerformance);
     };
-  }, [logPagePerformance]);
+  }, [enableConsoleLog, id, logPagePerformance]);
 
   return <>{children}</>;
 };
