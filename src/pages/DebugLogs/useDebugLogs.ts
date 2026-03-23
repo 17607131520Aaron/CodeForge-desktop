@@ -1,12 +1,18 @@
-import { useCallback, useEffect, useRef, useState, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+import { useWebSocket } from "@/hooks/useWebSocket";
 
 import { DEFAULT_MAX_LOGS, DEFAULT_PORT } from "./constants";
 
 import type { DebugLogItem, JsLogMessagePayload, IJsLogItem, IMetroLogMessage, LogLevel } from "./types";
 
 const LOG_SERVER_PATH = "/logs";
-const LOG_SERVER_URL = `ws://localhost:${DEFAULT_PORT}${LOG_SERVER_PATH}`;
 const JS_LOG_MESSAGE_TYPES = new Set(["js-log"]);
+
+const createLogServerUrl = () => {
+  const hostname = window.location.hostname || "localhost";
+  return `ws://${hostname}:${DEFAULT_PORT}${LOG_SERVER_PATH}`;
+};
 
 const normalizeLogLevel = (level?: string): string => {
   const normalizedLevel = String(level || "log").toLowerCase();
@@ -19,12 +25,17 @@ const normalizeLogLevel = (level?: string): string => {
 };
 
 const useDebugLogs = () => {
-  const socketRef = useRef<WebSocket | null>(null);
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
   const [logs, setLogs] = useState<DebugLogItem[]>([]);
   const [levelFilter, setLevelFilter] = useState("log");
   const [searchText, setSearchText] = useState("");
+  const socketApi = useWebSocket<{ message: [unknown] }>({
+    autoConnect: true,
+    reconnection: false,
+    shared: false,
+    url: createLogServerUrl(),
+  });
+  const socketApiRef = useRef(socketApi);
+  socketApiRef.current = socketApi;
 
   const parseMetroMessage = useCallback((data: unknown): IJsLogItem => {
     let level: IJsLogItem["level"] = "unknown";
@@ -208,93 +219,22 @@ const useDebugLogs = () => {
     };
   }, []);
 
-  const cleanupSocket = useCallback(() => {
-    const socket = socketRef.current;
-    if (!socket) {
-      return;
+  const handleConnectClick = useCallback(async () => {
+    if (socketApi.isConnected) {
+      socketApi.forceDisconnect();
     }
 
-    socket.onopen = null;
-    socket.onmessage = null;
-    socket.onerror = null;
-    socket.onclose = null;
-    socketRef.current = null;
-
-    if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
-      socket.close();
+    try {
+      await socketApi.connect();
+    } catch (error) {
+      console.error("[DebugLogs] Failed to connect log server:", error);
     }
-  }, []);
-
-  const connect = useCallback(() => {
-    cleanupSocket();
-
-    setIsConnecting(true);
-    setIsConnected(false);
-
-    const socket = new WebSocket(LOG_SERVER_URL);
-    socketRef.current = socket;
-
-    socket.onopen = () => {
-      console.log("[DebugLogs] Connected to log server:", LOG_SERVER_URL);
-      setIsConnecting(false);
-      setIsConnected(true);
-    };
-
-    socket.onmessage = (event) => {
-      try {
-        const parsedMessage = JSON.parse(String(event.data)) as JsLogMessagePayload;
-
-        if (!JS_LOG_MESSAGE_TYPES.has(parsedMessage?.type)) {
-          return;
-        }
-
-        const nextLog: DebugLogItem = {
-          context: parsedMessage.context,
-          id: `${parsedMessage.timestamp || Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-          level: normalizeLogLevel(parsedMessage.level),
-          // message: parsedMessage.message || "",
-          message: parseMetroMessage(parsedMessage.message).message,
-          timestamp: parsedMessage.timestamp || new Date().toISOString(),
-        };
-
-        setLogs((currentLogs) => {
-          const nextLogs = [...currentLogs, nextLog];
-          if (nextLogs.length <= DEFAULT_MAX_LOGS) {
-            return nextLogs;
-          }
-          return nextLogs.slice(nextLogs.length - DEFAULT_MAX_LOGS);
-        });
-
-        console.log("[DebugLogs] Received JS log message:", parsedMessage);
-      } catch {
-        console.log("[DebugLogs] Ignored non-JSON message:", event.data);
-      }
-    };
-
-    socket.onerror = (event) => {
-      console.error("[DebugLogs] WebSocket error:", event);
-      setIsConnecting(false);
-      setIsConnected(false);
-    };
-
-    socket.onclose = () => {
-      console.log("[DebugLogs] Disconnected from log server");
-      setIsConnecting(false);
-      setIsConnected(false);
-      socketRef.current = null;
-    };
-  }, [cleanupSocket]);
-
-  const handleConnectClick = useCallback(() => {
-    connect();
-  }, [connect]);
+  }, [socketApi]);
 
   const handleClose = useCallback(() => {
-    cleanupSocket();
-    setIsConnecting(false);
-    setIsConnected(false);
+    socketApi.forceDisconnect();
     console.log("[DebugLogs] Connection closed manually");
-  }, [cleanupSocket]);
+  }, [socketApi]);
 
   const handleClearLogs = useCallback(() => {
     setLogs([]);
@@ -311,12 +251,44 @@ const useDebugLogs = () => {
   // });
 
   useEffect(() => {
-    connect();
+    const unsubscribe = socketApiRef.current.subscribe("message", (payload) => {
+      let parsedMessage: JsLogMessagePayload | null = null;
+
+      try {
+        parsedMessage =
+          typeof payload === "string" ? (JSON.parse(payload) as JsLogMessagePayload) : (payload as JsLogMessagePayload);
+      } catch {
+        console.log("[DebugLogs] Ignored non-JSON message:", payload);
+        return;
+      }
+
+      if (!JS_LOG_MESSAGE_TYPES.has(parsedMessage?.type)) {
+        return;
+      }
+
+      const nextLog: DebugLogItem = {
+        context: parsedMessage.context,
+        id: `${parsedMessage.timestamp || Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        level: normalizeLogLevel(parsedMessage.level),
+        message: parseMetroMessage(parsedMessage.message).message,
+        timestamp: parsedMessage.timestamp || new Date().toISOString(),
+      };
+
+      setLogs((currentLogs) => {
+        const nextLogs = [...currentLogs, nextLog];
+        if (nextLogs.length <= DEFAULT_MAX_LOGS) {
+          return nextLogs;
+        }
+        return nextLogs.slice(nextLogs.length - DEFAULT_MAX_LOGS);
+      });
+
+      console.log("[DebugLogs] Received JS log message:", parsedMessage);
+    });
 
     return () => {
-      cleanupSocket();
+      unsubscribe();
     };
-  }, [cleanupSocket, connect]);
+  }, [parseMetroMessage]);
 
   const filteredLogs = useMemo(() => {
     return logs.filter((log) => {
@@ -335,8 +307,8 @@ const useDebugLogs = () => {
     handleClearLogs,
     handleClose,
     handleConnectClick,
-    isConnected,
-    isConnecting,
+    isConnected: socketApi.isConnected,
+    isConnecting: socketApi.isConnecting,
     levelFilter,
     searchText,
     setLevelFilter,
