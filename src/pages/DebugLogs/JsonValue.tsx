@@ -4,12 +4,13 @@ import React, { useState } from "react";
 import { DownOutlined, RightOutlined } from "@ant-design/icons";
 
 const JsonValue: React.FC<{
+  defaultExpandedDepth?: number;
   level?: number;
   parentKey?: string;
   value: unknown;
-}> = ({ level = 0, parentKey: _parentKey, value }) => {
+}> = ({ defaultExpandedDepth = 2, level = 0, parentKey: _parentKey, value }) => {
   // 根节点默认折叠，子节点展开 2 层，整体效果更接近 Chrome 控制台
-  const [isExpanded, setIsExpanded] = useState(level > 0 && level < 3);
+  const [isExpanded, setIsExpanded] = useState(level < defaultExpandedDepth);
 
   const indent = level * 16;
 
@@ -66,7 +67,7 @@ const JsonValue: React.FC<{
             <div style={{ marginLeft: indent + 16 }}>
               {value.map((item, index) => (
                 <div key={index} className="json-line">
-                  <JsonValue level={level + 1} value={item} />
+                  <JsonValue defaultExpandedDepth={defaultExpandedDepth} level={level + 1} value={item} />
                   {index < value.length - 1 && <span className="json-comma">,</span>}
                 </div>
               ))}
@@ -114,7 +115,12 @@ const JsonValue: React.FC<{
                 <div key={key} className="json-line">
                   <span className="json-key">"{key}"</span>
                   <span className="json-colon">: </span>
-                  <JsonValue level={level + 1} parentKey={key} value={val} />
+                  <JsonValue
+                    defaultExpandedDepth={defaultExpandedDepth}
+                    level={level + 1}
+                    parentKey={key}
+                    value={val}
+                  />
                   {index < entries.length - 1 && <span className="json-comma">,</span>}
                 </div>
               ))}

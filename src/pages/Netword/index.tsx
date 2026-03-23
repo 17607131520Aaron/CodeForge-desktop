@@ -7,8 +7,9 @@ import {
   ReloadOutlined,
   StopOutlined,
 } from "@ant-design/icons";
-import { Badge, Button, Card, Input, Select, Space, Spin, Tooltip, Typography, Table } from "antd";
+import { Badge, Button, Card, Input, Modal, Select, Space, Spin, Tooltip, Typography, Table } from "antd";
 
+import RequestDetail from "./RequestDetail";
 import useColumns from "./useColumns";
 import useNetworkMonitor from "./useNetworkMonitor";
 
@@ -41,7 +42,11 @@ const Netword: React.FC = () => {
     toggleRecording,
   } = useNetworkMonitor();
 
-  const columns = useColumns();
+  const columns = useColumns({
+    onDetail: (payload) => {
+      setSelectedRequest(payload);
+    },
+  });
   const handleClear = () => {
     handleClearRequests();
     setSelectedRequest(null);
@@ -179,7 +184,7 @@ const Netword: React.FC = () => {
                   virtual
                   {...(tableScrollY > 0 ? { scroll: { y: tableScrollY } } : {})}
                   locale={{ emptyText: "暂无接口数据" }}
-                  onRow={(record) => ({
+                  onRow={(record: INetworkRequest) => ({
                     onClick: () => {
                       setSelectedRequest(record);
                     },
@@ -193,38 +198,18 @@ const Netword: React.FC = () => {
             )}
           </Card>
         </div>
-        {/* <div className="network-details-panel">
-          <Card className="network-details-card">
-            {!selectedRequest ? (
-              <div style={{ padding: 24, color: "#8c8c8c" }}>请选择左侧接口查看详情</div>
-            ) : (
-              <div style={{ height: "100%", overflow: "auto" }}>
-                <div style={{ marginBottom: 12 }}>
-                  <Text strong>
-                    {selectedRequest.method} {selectedRequest.status ?? "-"}
-                  </Text>
-                  <div style={{ marginTop: 6 }}>
-                    <Text type="secondary" style={{ wordBreak: "break-all" }}>
-                      {selectedRequest.url}
-                    </Text>
-                  </div>
-                </div>
-                <pre
-                  style={{
-                    margin: 0,
-                    fontSize: 12,
-                    lineHeight: 1.5,
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
-                  }}
-                >
-                  {JSON.stringify(selectedRequest, null, 2)}
-                </pre>
-              </div>
-            )}
-          </Card>
-        </div> */}
       </div>
+      <Modal
+        destroyOnHidden
+        className="network-details-modal"
+        footer={null}
+        open={selectedRequest !== null}
+        title="接口详情"
+        width={960}
+        onCancel={() => setSelectedRequest(null)}
+      >
+        <RequestDetail request={selectedRequest} />
+      </Modal>
     </div>
   );
 };
