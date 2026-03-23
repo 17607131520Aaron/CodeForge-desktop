@@ -58,6 +58,26 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ request }) => {
     headerName: key,
     headerValue: value,
   }));
+  const responseHeaderDataSource = Object.entries(request.responseHeaders ?? {}).map(([key, value]) => ({
+    key,
+    headerName: key,
+    headerValue: value,
+  }));
+  const headerColumns = [
+    {
+      dataIndex: "headerName",
+      key: "headerName",
+      title: "请求头",
+      width: 180,
+      render: (value: string) => <Text code>{value}</Text>,
+    },
+    {
+      dataIndex: "headerValue",
+      key: "headerValue",
+      title: "值",
+      render: (value: string) => <div className="network-header-value-cell">{value}</div>,
+    },
+  ];
 
   const handleCopyCurl = async () => {
     try {
@@ -113,32 +133,43 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ request }) => {
       label: "请求头",
       children: (
         <div className="network-tab-scroll-area">
-          {headerDataSource.length > 0 ? (
-            <Table
-              bordered
-              className="network-headers-table"
-              columns={[
-                {
-                  dataIndex: "headerName",
-                  key: "headerName",
-                  title: "请求头",
-                  width: 180,
-                  render: (value: string) => <Text code>{value}</Text>,
-                },
-                {
-                  dataIndex: "headerValue",
-                  key: "headerValue",
-                  title: "值",
-                  render: (value: string) => <div className="network-header-value-cell">{value}</div>,
-                },
-              ]}
-              dataSource={headerDataSource}
-              pagination={false}
-              rowKey="key"
-              size="small"
-            />
+          {headerDataSource.length > 0 || responseHeaderDataSource.length > 0 ? (
+            <div className="network-header-sections">
+              <div className="network-header-section">
+                <Text strong>请求头</Text>
+                {headerDataSource.length > 0 ? (
+                  <Table
+                    bordered
+                    className="network-headers-table"
+                    columns={headerColumns}
+                    dataSource={headerDataSource}
+                    pagination={false}
+                    rowKey="key"
+                    size="small"
+                  />
+                ) : (
+                  <Empty description="暂无请求头" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                )}
+              </div>
+              <div className="network-header-section">
+                <Text strong>响应头</Text>
+                {responseHeaderDataSource.length > 0 ? (
+                  <Table
+                    bordered
+                    className="network-headers-table"
+                    columns={headerColumns}
+                    dataSource={responseHeaderDataSource}
+                    pagination={false}
+                    rowKey="key"
+                    size="small"
+                  />
+                ) : (
+                  <Empty description="暂无响应头" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                )}
+              </div>
+            </div>
           ) : (
-            <Empty description="暂无请求头" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            <Empty description="暂无头信息" image={Empty.PRESENTED_IMAGE_SIMPLE} />
           )}
         </div>
       ),

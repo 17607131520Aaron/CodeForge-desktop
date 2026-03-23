@@ -163,6 +163,18 @@
   }
 }
 
+.network-header-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.network-header-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .network-header-value-cell {
   white-space: pre-wrap;
   word-break: break-word;
