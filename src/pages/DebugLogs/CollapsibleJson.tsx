@@ -22,9 +22,13 @@ const CollapsibleJson: React.FC<{ message: string }> = ({ message }) => {
       // 贪婪匹配：从第一个 {/[ 一直找到最后一个 }/]
       const greedyMatch = trimmed.match(/^(\{[\s\S]*\}|\[[\s\S]*\])(.*)$/);
       if (greedyMatch) {
-        const [, jsonPart, restPart] = greedyMatch;
+        const jsonPart = greedyMatch[1];
+        const restPart = greedyMatch[2];
+        if (!jsonPart) {
+          return;
+        }
         try {
-          const parsed = JSON.parse(jsonPart);
+          const parsed: unknown = JSON.parse(jsonPart);
           const segs: Segment[] = [{ type: "json", parsed, raw: jsonPart }];
           if (restPart && restPart.trim()) {
             segs.push({ type: "text", text: restPart });
@@ -50,9 +54,16 @@ const CollapsibleJson: React.FC<{ message: string }> = ({ message }) => {
     // 贪婪匹配 JSON 片段
     const jsonMatch = after.match(/^(\{[\s\S]*\}|\[[\s\S]*\])(.*)$/);
     if (jsonMatch) {
-      const [, jsonPart, restPart] = jsonMatch;
+      const jsonPart = jsonMatch[1];
+      const restPart = jsonMatch[2];
+      if (!jsonPart) {
+        // Extremely defensive: the RegExp matched, but TS still treats captures as possibly undefined.
+        // Fall back to plain-text handling below.
+        setSegments([{ type: "text", text: message }]);
+        return;
+      }
       try {
-        const parsed = JSON.parse(jsonPart);
+        const parsed: unknown = JSON.parse(jsonPart);
         const segs: Segment[] = [];
         if (before) {
           segs.push({ type: "text", text: before });
@@ -77,10 +88,11 @@ const CollapsibleJson: React.FC<{ message: string }> = ({ message }) => {
   }
 
   // 只有一个 JSON 片段，且整条就是它：直接用 JSON 折叠视图（接近 DevTools）
-  if (segments.length === 1 && segments[0].type === "json" && message.trim() === segments[0].raw.trim()) {
+  const onlySegment = segments.length === 1 ? segments[0] : undefined;
+  if (onlySegment && onlySegment.type === "json" && message.trim() === onlySegment.raw.trim()) {
     return (
       <span className="chrome-like-json">
-        <JsonValue level={0} value={segments[0].parsed} />
+        <JsonValue level={0} value={onlySegment.parsed} />
       </span>
     );
   }
