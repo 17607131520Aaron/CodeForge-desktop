@@ -193,7 +193,7 @@ const Netword: React.FC = () => {
             )}
           </Card>
         </div>
-        <div className="network-details-panel">
+        {/* <div className="network-details-panel">
           <Card className="network-details-card">
             {!selectedRequest ? (
               <div style={{ padding: 24, color: "#8c8c8c" }}>请选择左侧接口查看详情</div>
@@ -223,7 +223,7 @@ const Netword: React.FC = () => {
               </div>
             )}
           </Card>
-        </div>
+        </div> */}
       </div>
     </div>
   );
