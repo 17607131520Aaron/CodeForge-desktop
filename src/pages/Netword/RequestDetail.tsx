@@ -42,6 +42,14 @@ const formatTime = (timestamp?: number) => {
   return new Date(timestamp).toLocaleString();
 };
 
+const stringifyCopyValue = (value: unknown) => {
+  if (value === undefined) {
+    return "";
+  }
+
+  return typeof value === "string" ? value : JSON.stringify(value, null, 2);
+};
+
 const RequestDetail: React.FC<RequestDetailProps> = ({ request }) => {
   if (!request) {
     return (
@@ -53,6 +61,8 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ request }) => {
 
   const curlCommand = buildCurlCommand(request);
   const requestPayload = getRequestPayload(request);
+  const requestPayloadText = stringifyCopyValue(requestPayload);
+  const responseDataText = stringifyCopyValue(request.responseData);
   const headerDataSource = Object.entries(request.headers ?? {}).map(([key, value]) => ({
     key,
     headerName: key,
@@ -85,6 +95,16 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ request }) => {
       message.success("复制成功");
     } catch (error) {
       console.error("[Network] Failed to copy curl command:", error);
+      message.error("复制失败");
+    }
+  };
+
+  const handleCopyContent = async (content: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      message.success("复制成功");
+    } catch (error) {
+      console.error("[Network] Failed to copy content:", error);
       message.error("复制失败");
     }
   };
@@ -180,9 +200,16 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ request }) => {
       children: (
         <div className="network-tab-scroll-area network-json-panel">
           {requestPayload !== undefined ? (
-            <div className="chrome-like-json">
-              <JsonValue defaultExpandedDepth={3} value={requestPayload} />
-            </div>
+            <>
+              <Space className="network-tab-actions">
+                <Button icon={<CopyOutlined />} size="small" onClick={() => handleCopyContent(requestPayloadText)}>
+                  复制请求参数
+                </Button>
+              </Space>
+              <div className="chrome-like-json">
+                <JsonValue defaultExpandedDepth={3} value={requestPayload} />
+              </div>
+            </>
           ) : (
             <Empty description="暂无请求载荷" image={Empty.PRESENTED_IMAGE_SIMPLE} />
           )}
@@ -195,9 +222,16 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ request }) => {
       children: (
         <div className="network-tab-scroll-area network-json-panel">
           {request.responseData !== undefined ? (
-            <div className="chrome-like-json">
-              <JsonValue defaultExpandedDepth={3} value={request.responseData} />
-            </div>
+            <>
+              <Space className="network-tab-actions">
+                <Button icon={<CopyOutlined />} size="small" onClick={() => handleCopyContent(responseDataText)}>
+                  复制响应数据
+                </Button>
+              </Space>
+              <div className="chrome-like-json">
+                <JsonValue defaultExpandedDepth={3} value={request.responseData} />
+              </div>
+            </>
           ) : request.error ? (
             <pre className="network-code-block">{request.error}</pre>
           ) : (
