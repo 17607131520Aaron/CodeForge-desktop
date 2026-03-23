@@ -3,16 +3,31 @@ import React from "react";
 import { Outlet } from "react-router-dom";
 
 import { AppstoreOutlined, SearchOutlined } from "@ant-design/icons";
-import { Layout, Menu, Input } from "antd";
+import { Input, Layout, List, Menu } from "antd";
 
 import useApp from "./userApp";
+
+import type { IFlatMenuItem } from "./types";
+
 import "./index.scss";
 const { Sider, Content } = Layout;
 
 const App: React.FC = () => {
+  const {
+    openKeys,
+    collapsed,
+    searchValue,
+    flatSearchResults,
+    selectedKeys,
+    filteredMenuItems,
+    handleMenuClick,
+    handleOpenChange,
+    handleSearch,
+    handleCollapse,
+  } = useApp();
 
-  const { collapsed, searchValue, filteredMenuItems, handleMenuClick, handleOpenChange, handleSearch, handleCollapse } =
-    useApp();
+  //判断是否显示菜单列表
+  const showMenuList = Boolean(searchValue.trim()) && !collapsed;
 
   return (
     <Layout className="comprehension-home">
@@ -46,20 +61,55 @@ const App: React.FC = () => {
               />
             ) : (
               <div className="comprehension-menu-content-search-collapsed">
-                <div className="comprehension-menu-content-search-icon">
+                <div className="comprehension-menu-content-search-icon" onClick={() => handleCollapse(false)}>
                   <SearchOutlined />
                 </div>
               </div>
             )}
           </div>
-          <Menu
-            items={filteredMenuItems}
-            mode="inline"
-            theme="light"
-            onClick={handleMenuClick}
-            onOpenChange={handleOpenChange}
-            className="comprehension-menu-content-menu"
-          />
+          <div className="comprehension-menu-content-menu">
+            {showMenuList ? (
+              <div className="comprehension-menu-content-menu-results">
+                <div className="comprehension-menu-content-menu-results-count">
+                  共搜索到 {flatSearchResults.length} 项与"{searchValue}"相关的菜单
+                </div>
+                <List
+                  className="comprehension-menu-content-menu-results-list"
+                  dataSource={flatSearchResults as IFlatMenuItem[]}
+                  renderItem={(item: IFlatMenuItem) => (
+                    <List.Item
+                      className={`comprehension-menu-content-menu-results-item ${
+                        selectedKeys.includes(item.key) ? "comprehension-menu-content-menu-results-item-selected" : ""
+                      }`}
+                      onClick={() => {
+                        if (item.key.startsWith("/")) {
+                          handleMenuClick({ key: item.key });
+                        }
+                      }}
+                    >
+                      <div className="comprehension-menu-content-menu-results-content">
+                        {item.icon && <span className="comprehension-menu-content-menu-results-icon">{item.icon}</span>}
+                        <span className="comprehension-menu-content-menu-results-label">
+                          {item.parentLabel ? `${item.parentLabel} / ${item.label}` : item.label}
+                        </span>
+                      </div>
+                    </List.Item>
+                  )}
+                />
+              </div>
+            ) : (
+              <Menu
+                items={filteredMenuItems}
+                mode="inline"
+                openKeys={openKeys}
+                selectedKeys={selectedKeys}
+                theme="light"
+                onClick={handleMenuClick}
+                onOpenChange={handleOpenChange}
+              />
+            )}
+          </div>
+
           <div>底部用户内容</div>
         </div>
       </Sider>
