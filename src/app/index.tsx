@@ -153,14 +153,17 @@ const App: React.FC = () => {
         <Content className="comprehension-content-contentPages">
           <div className="wrapper">
             <Spin
+              className="comprehension-content-spin"
               size="large"
               spinning={isLoading}
-              style={{ height: "100%" }}
+              style={{ height: "100%", flex: 1 }}
               tip={isRefreshing ? "页面刷新中..." : "页面加载中..."}
             >
-              <div style={{ height: "100%" }}>
+              <div className="comprehension-content-spin-inner">
                 <PerformanceMonitor enableConsoleLog id={`Page-${location.pathname}`}>
-                  <Outlet />
+                  <div className="comprehension-content-route-host">
+                    <Outlet />
+                  </div>
                 </PerformanceMonitor>
               </div>
             </Spin>
