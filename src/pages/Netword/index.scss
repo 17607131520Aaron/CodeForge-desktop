@@ -33,15 +33,40 @@
     .network-list {
       width: 40%;
       height: 100%;
+      min-height: 0;
     }
 
     .network-details-panel {
       flex: 1;
+      min-height: 0;
     }
 
     .network-list-card {
       height: 100%;
-      padding: 12px;
+
+      .ant-card-body {
+        min-height: 0;
+        padding: 12px;
+      }
+
+      .network-table-container {
+        flex: 1;
+        height: 100%;
+        min-height: 0;
+        overflow: hidden;
+
+        .ant-table-wrapper,
+        .ant-spin-nested-loading,
+        .ant-spin-container,
+        .ant-table {
+          height: 100%;
+        }
+
+        .ant-table-content,
+        .ant-table-body {
+          scrollbar-gutter: stable;
+        }
+      }
     }
 
     .network-details-card {
