@@ -40,8 +40,6 @@ const useNetworkMonitor = () => {
     url: createLogServerUrl(),
   });
 
-  // `useWebSocket()` returns a new object reference on each render; use a ref so our subscription
-  // effect doesn't continually unsubscribe/resubscribe and accidentally trigger update loops.
   const socketApiRef = useRef(socketApi);
   socketApiRef.current = socketApi;
 

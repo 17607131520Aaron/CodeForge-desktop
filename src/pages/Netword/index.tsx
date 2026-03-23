@@ -7,8 +7,9 @@ import {
   ReloadOutlined,
   StopOutlined,
 } from "@ant-design/icons";
-import { Badge, Button, Card, Input, Select, Space, Spin, Tooltip, Typography } from "antd";
+import { Badge, Button, Card, Input, Select, Space, Spin, Tooltip, Typography, Table } from "antd";
 
+import useColumns from "./useColumns";
 import useNetworkMonitor from "./useNetworkMonitor";
 
 import "./index.scss";
@@ -32,6 +33,8 @@ const Netword: React.FC = () => {
     statusFilter,
     toggleRecording,
   } = useNetworkMonitor();
+
+  const columns = useColumns();
 
   return (
     <div className="network-monitor">
@@ -117,7 +120,29 @@ const Netword: React.FC = () => {
       </Card>
       <div className="network-content">
         <div className="network-list">
-          <Card className="network-list-card" />
+          <Card className="network-list-card">
+            {!isConnected ? (
+              <div style={{ padding: 40, textAlign: "center" }}>
+                <Text type="secondary">请先连接到网络监控服务器</Text>
+              </div>
+            ) : (
+              <Table
+                columns={columns}
+                bordered
+                dataSource={[]}
+                rowKey="id"
+                scroll={{ y: 600 }}
+                pagination={false}
+                size="small"
+                onRow={(record) => ({
+                  onClick: () => {
+                    console.log(record, "record");
+                  },
+                  style: { cursor: "pointer" },
+                })}
+              />
+            )}
+          </Card>
         </div>
         <div className="network-details-panel">
           <Card className="network-details-card" />
