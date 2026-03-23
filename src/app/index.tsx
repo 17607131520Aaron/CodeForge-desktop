@@ -2,7 +2,8 @@ import React from "react";
 
 import { Outlet } from "react-router-dom";
 
-import { Layout, Menu } from "antd";
+import { AppstoreOutlined, SearchOutlined } from "@ant-design/icons";
+import { Layout, Menu, Input } from "antd";
 
 import useApp from "./userApp";
 import "./index.scss";
@@ -10,31 +11,61 @@ const { Sider, Content } = Layout;
 
 const App: React.FC = () => {
 
-  const { filteredMenuItems, handleMenuClick, handleOpenChange } = useApp();
+  const { collapsed, searchValue, filteredMenuItems, handleMenuClick, handleOpenChange, handleSearch, handleCollapse } =
+    useApp();
 
   return (
-    <Layout className="asp-comprehension-home" style={{ height: "100vh", overflow: "hidden" }}>
+    <Layout className="comprehension-home">
       <Sider
+        className="comprehension-menu"
         collapsible
         breakpoint="md"
-        className="asp-comprehension-home-menu"
-        collapsed={false}
+        collapsed={collapsed}
         collapsedWidth={80}
         trigger={null}
-        width={240}
+        width={220}
+        onBreakpoint={handleCollapse}
       >
-        <Menu
-          className="asp-comprehension-home-menu-content"
-          items={filteredMenuItems}
-          mode="inline"
-          theme="light"
-          onClick={handleMenuClick}
-          onOpenChange={handleOpenChange}
-        />
+        <div className="comprehension-menu-content">
+          <div className="comprehension-menu-content-header">
+            <div className="comprehension-menu-content-header-logo">
+              <div className="comprehension-menu-content-header-logo-icon">
+                <AppstoreOutlined />
+              </div>
+              {!collapsed && <span className="comprehension-menu-content-header-logo-title">某某调试工具</span>}
+            </div>
+          </div>
+          <div className="comprehension-menu-content-search">
+            {!collapsed ? (
+              <Input
+                allowClear
+                placeholder="搜索菜单"
+                prefix={<SearchOutlined />}
+                value={searchValue}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleSearch(e.target.value)}
+              />
+            ) : (
+              <div className="comprehension-menu-content-search-collapsed">
+                <div className="comprehension-menu-content-search-icon">
+                  <SearchOutlined />
+                </div>
+              </div>
+            )}
+          </div>
+          <Menu
+            items={filteredMenuItems}
+            mode="inline"
+            theme="light"
+            onClick={handleMenuClick}
+            onOpenChange={handleOpenChange}
+            className="comprehension-menu-content-menu"
+          />
+          <div>底部用户内容</div>
+        </div>
       </Sider>
 
-      <Layout style={{ height: "100%", overflow: "hidden" }}>
-        <Content className="asp-comprehension-home-content">
+      <Layout className="comprehension-content" style={{ height: "100%", overflow: "hidden" }}>
+        <Content>
           <Outlet />
         </Content>
       </Layout>

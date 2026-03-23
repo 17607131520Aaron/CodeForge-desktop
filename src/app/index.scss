@@ -1,8 +1,222 @@
-.asp-comprehension-home {
+.comprehension-home {
   display: flex;
   width: 100%;
   height: 100vh;
   max-height: 100vh;
   background: var(--color-bg-secondary, #f0f2f5);
   overflow: hidden;
+  display: flex;
+
+    // Ant Design Layout 样式覆盖
+    .ant-layout {
+      height: 100%;
+      background: transparent;
+      overflow: hidden;
+    }
+
+    .ant-layout-sider {
+      position: relative;
+      z-index: 10;
+      height: 100%;
+      background: var(--color-bg, #fff);
+      box-shadow: var(--shadow-md, 2px 0 12px rgb(0 0 0 / 0.04));
+      overflow: hidden;
+
+      // 让侧边栏内容（含头部 / 搜索 / 菜单）采用纵向 flex 布局
+      .ant-layout-sider-children {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: 0;
+      }
+    }
+
+    .ant-layout-content {
+      height: 100%;
+      overflow: hidden;
+    }
+
+  .comprehension-menu {
+    min-width: 0;
+    height: 100%;
+    background-color: #fff;
+    // padding: 12px;
+
+    &-content {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      padding: 0 8px 12px;
+
+      &-header{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-shrink: 0;
+        padding: 8px 0;
+
+        &-logo {
+          position: relative;
+          display: flex;
+          justify-content: flex-start;
+          align-items: center;
+          width: 100%;
+          padding: 0 12px;
+          background: linear-gradient(135deg, #237ffa 0%, #1e6dd8 50%, #1a5fc4 100%);
+          border: 1px solid rgb(255 255 255 / 0.1);
+          border-radius: 10px;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          min-height: 48px;
+          box-shadow:
+            0 2px 8px rgb(35 127 250 / 0.2),
+            0 1px 3px rgb(0 0 0 / 0.1);
+          overflow: hidden;
+          cursor: pointer;
+
+          // 顶部高光效果
+          &::before {
+            position: absolute;
+            top: 0;
+            right: 0;
+            left: 0;
+            height: 50%;
+            background: linear-gradient(180deg, rgb(255 255 255 / 0.15) 0%, rgb(255 255 255 / 0.05) 50%, transparent 100%);
+            border-radius: 10px 10px 0 0;
+            pointer-events: none;
+            content: "";
+          }
+
+          // 底部阴影增强
+          &::after {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            height: 30%;
+            background: linear-gradient(0deg, rgb(0 0 0 / 0.1) 0%, transparent 100%);
+            border-radius: 0 0 10px 10px;
+            pointer-events: none;
+            content: "";
+          }
+
+          &:hover {
+            background: linear-gradient(135deg, #2a8aff 0%, #2370e8 50%, #1e6dd8 100%);
+            box-shadow:
+              0 4px 16px rgb(35 127 250 / 0.3),
+              0 2px 6px rgb(0 0 0 / 0.15);
+            transform: translateY(-1px);
+          }
+
+          &:active {
+            box-shadow:
+              0 2px 8px rgb(35 127 250 / 0.2),
+              0 1px 3px rgb(0 0 0 / 0.1);
+            transform: translateY(0);
+          }
+
+          &-icon {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 32px;
+            height: 32px;
+            font-size: 20px;
+            color: #fff;
+            background: rgb(255 255 255 / 0.15);
+            border-radius: 8px;
+            transition: all 0.3s;
+            flex-shrink: 0;
+          }
+
+          &-title {
+            position: relative;
+            z-index: 1;
+            font-size: 15px;
+            font-weight: 600;
+            color: #fff;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            max-width: 200px;
+            margin-left: 12px;
+            letter-spacing: 0.5px;
+            text-shadow: 0 1px 2px rgb(0 0 0 / 0.1);
+            white-space: nowrap;
+            opacity: 1;
+            overflow: hidden;
+          }
+        }
+
+      }
+
+      &-search{
+        width: 100%;
+        margin-bottom: 10px;
+
+        flex-shrink: 0;
+
+
+        .ant-input {
+          border-radius: 6px;
+          border-color: var(--color-border, #d9d9d9);
+          transition: all 0.2s;
+
+          &:hover {
+            border-color: var(--color-primary);
+          }
+
+          &:focus {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 2px rgb(35 127 250 / 0.1);
+          }
+        }
+
+        .anticon-search {
+          color: var(--color-text-tertiary, #8c8c8c);
+        }
+
+        &-collapsed {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          padding: 8px;
+          flex-shrink: 0;
+
+          &-icon {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 40px;
+            height: 40px;
+            font-size: 18px;
+            color: var(--color-text-secondary, #595959);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+
+            &:hover {
+              color: var(--color-primary, #237ffa);
+              background: rgb(35 127 250 / 0.08);
+            }
+
+            &:active {
+              background: rgb(35 127 250 / 0.12);
+            }
+          }
+        }
+
+
+      }
+
+      &-menu{
+        flex: 1;
+      }
+    }
+  }
+
+  .comprehension-content {
+    flex: 1;
+    background: var(--color-bg-secondary, #f0f2f5);
+  }
 }
