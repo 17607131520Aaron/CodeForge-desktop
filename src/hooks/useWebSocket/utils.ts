@@ -151,7 +151,14 @@ export function defaultResolveRequest(context: WebSocketRequestContext): AckResu
     return null;
   }
 
-  const record = payload as { code?: string; data?: unknown; error?: string; id?: string; requestId?: string; success?: boolean };
+  const record = payload as {
+    code?: string;
+    data?: unknown;
+    error?: string;
+    id?: string;
+    requestId?: string;
+    success?: boolean;
+  };
   const responseId = record.requestId ?? record.id;
   if (responseId !== requestId) {
     return null;

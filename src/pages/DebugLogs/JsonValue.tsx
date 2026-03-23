@@ -6,13 +6,18 @@ import { DownOutlined, RightOutlined } from "@ant-design/icons";
 const JsonValue: React.FC<{
   defaultExpandedDepth?: number;
   level?: number;
+  onExpandedChange?: () => void;
   parentKey?: string;
   value: unknown;
-}> = ({ defaultExpandedDepth = 2, level = 0, parentKey: _parentKey, value }) => {
+}> = ({ defaultExpandedDepth = 2, level = 0, onExpandedChange, parentKey: _parentKey, value }) => {
   // 根节点默认折叠，子节点展开 2 层，整体效果更接近 Chrome 控制台
   const [isExpanded, setIsExpanded] = useState(level < defaultExpandedDepth);
 
   const indent = level * 16;
+
+  React.useEffect(() => {
+    onExpandedChange?.();
+  }, [isExpanded, onExpandedChange]);
 
   // 字符串
   if (typeof value === "string") {
@@ -118,6 +123,7 @@ const JsonValue: React.FC<{
                   <JsonValue
                     defaultExpandedDepth={defaultExpandedDepth}
                     level={level + 1}
+                    onExpandedChange={onExpandedChange}
                     parentKey={key}
                     value={val}
                   />

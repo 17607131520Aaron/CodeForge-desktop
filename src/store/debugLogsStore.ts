@@ -9,6 +9,7 @@ type DebugLogsState = {
   logs: DebugLogItem[];
   searchText: string;
   appendLog: (log: DebugLogItem) => void;
+  appendLogs: (logs: DebugLogItem[]) => void;
   clearLogs: () => void;
   reset: () => void;
   setLevelFilter: (levelFilter: string) => void;
@@ -34,6 +35,19 @@ export const useDebugLogsStore = create<DebugLogsState>()(
           };
         });
       },
+      appendLogs: (logs) => {
+        if (logs.length === 0) {
+          return;
+        }
+
+        set((state) => {
+          const nextLogs = [...state.logs, ...logs];
+
+          return {
+            logs: nextLogs.length <= DEFAULT_MAX_LOGS ? nextLogs : nextLogs.slice(nextLogs.length - DEFAULT_MAX_LOGS),
+          };
+        });
+      },
       clearLogs: () => {
         set({ logs: [] });
       },
@@ -51,7 +65,6 @@ export const useDebugLogsStore = create<DebugLogsState>()(
       name: "debug-logs-store",
       partialize: (state) => ({
         levelFilter: state.levelFilter,
-        logs: state.logs,
         searchText: state.searchText,
       }),
       storage: createJSONStorage(() => localStorage),

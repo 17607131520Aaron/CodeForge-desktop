@@ -157,6 +157,16 @@
   background: #0f172a;
 }
 
+.network-large-json-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.network-code-block-compact {
+  max-height: 360px;
+}
+
 .network-headers-table {
   .ant-table-cell {
     vertical-align: top;

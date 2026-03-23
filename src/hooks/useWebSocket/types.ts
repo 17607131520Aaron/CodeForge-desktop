@@ -111,7 +111,11 @@ export interface WebSocketClientConfig {
   parseMessage?: (event: MessageEvent) => unknown;
   resolveEvent?: (context: WebSocketMessageContext) => ResolvedWebSocketEvent | null;
   serializeMessage?: (event: string, args: unknown[]) => string | ArrayBufferLike | Blob | ArrayBufferView;
-  createRequestMessage?: (event: string, args: unknown[], requestId: string) => string | ArrayBufferLike | Blob | ArrayBufferView;
+  createRequestMessage?: (
+    event: string,
+    args: unknown[],
+    requestId: string,
+  ) => string | ArrayBufferLike | Blob | ArrayBufferView;
   resolveRequest?: (context: WebSocketRequestContext) => AckResult<unknown> | null;
 }
 

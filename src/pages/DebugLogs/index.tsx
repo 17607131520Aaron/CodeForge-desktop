@@ -1,13 +1,13 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 
 import { ClearOutlined, DisconnectOutlined, ReloadOutlined, StopOutlined } from "@ant-design/icons";
 import { Badge, Button, Card, Input, Select, Space, Spin, Tooltip, Typography } from "antd";
 
 import { clearDebugLogsPersistedState } from "@/store/debugLogsStore";
 
-import CollapsibleJson from "./CollapsibleJson";
-import { DEFAULT_PORT, getLogLevelColor, levelOptions } from "./constants";
+import { DEFAULT_PORT, levelOptions } from "./constants";
 import useDebugLogs from "./useDebugLogs";
+import VirtualizedLogs from "./VirtualizedLogs";
 
 import "./index.scss";
 
@@ -15,7 +15,6 @@ const { Text } = Typography;
 const { Search } = Input;
 
 const DebugLogs: React.FC = () => {
-  const logsContainerRef = useRef<HTMLDivElement | null>(null);
   const {
     filteredLogs,
     handleClearLogs,
@@ -28,17 +27,6 @@ const DebugLogs: React.FC = () => {
     setLevelFilter,
     setSearchText,
   } = useDebugLogs();
-
-  useEffect(() => {
-    const el = logsContainerRef.current;
-    if (!el) {
-      return;
-    }
-
-    requestAnimationFrame(() => {
-      el.scrollTop = el.scrollHeight;
-    });
-  }, [filteredLogs]);
 
   useEffect(() => {
     const handleBeforeUnload = () => {
@@ -108,8 +96,8 @@ const DebugLogs: React.FC = () => {
         </Space>
       </Card>
       <Card className="content">
-        <div ref={logsContainerRef} className="rn-debug-logs-container">
-          {filteredLogs.length === 0 ? (
+        {filteredLogs.length === 0 ? (
+          <div className="rn-debug-logs-container">
             <div className="rn-debug-logs-empty">
               <DisconnectOutlined style={{ fontSize: 48, color: "#d9d9d9", marginBottom: 16 }} />
               <Text type="secondary">
@@ -133,27 +121,10 @@ const DebugLogs: React.FC = () => {
                 </div>
               )}
             </div>
-          ) : (
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            filteredLogs.map((log: any) => (
-              <div
-                key={log.id}
-                className="rn-debug-logs-item"
-                data-level={log.level === "unknown" ? undefined : log.level}
-              >
-                <span className="rn-debug-logs-level" style={{ color: getLogLevelColor(log.level) }}>
-                  [{log.level.toUpperCase()}]
-                </span>
-                <span className="rn-debug-logs-message">
-                  <span style={{ color: "#858585", marginRight: 8 }}>
-                    {new Date(log.timestamp).toLocaleTimeString()} -
-                  </span>
-                  <CollapsibleJson message={log.message} />
-                </span>
-              </div>
-            ))
-          )}
-        </div>
+          </div>
+        ) : (
+          <VirtualizedLogs logs={filteredLogs} />
+        )}
       </Card>
     </div>
   );

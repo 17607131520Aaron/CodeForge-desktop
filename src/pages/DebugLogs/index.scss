@@ -38,6 +38,7 @@
     background: #1e1e1e;
     box-sizing: border-box;
     overflow: hidden auto;
+    min-height: 0;
 
     &::-webkit-scrollbar {
       width: 12px;
@@ -74,6 +75,7 @@
     transition: background-color 0.2s;
     display: flex;
     align-items: flex-start;
+    box-sizing: border-box;
 
     &:hover {
       background-color: rgb(255 255 255 / 0.03);

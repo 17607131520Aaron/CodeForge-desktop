@@ -3,7 +3,7 @@ import React, { useState } from "react";
 
 import JsonValue from "./JsonValue";
 
-const CollapsibleJson: React.FC<{ message: string }> = ({ message }) => {
+const CollapsibleJson: React.FC<{ message: string; onContentResize?: () => void }> = ({ message, onContentResize }) => {
   type Segment = { type: "text"; text: string } | { type: "json"; parsed: unknown; raw: string };
 
   const [segments, setSegments] = useState<Segment[] | null>(null);
@@ -83,6 +83,10 @@ const CollapsibleJson: React.FC<{ message: string }> = ({ message }) => {
     setSegments([{ type: "text", text: message }]);
   }, [message]);
 
+  React.useEffect(() => {
+    onContentResize?.();
+  }, [onContentResize, segments]);
+
   if (!segments) {
     return <span>{message}</span>;
   }
@@ -92,7 +96,7 @@ const CollapsibleJson: React.FC<{ message: string }> = ({ message }) => {
   if (onlySegment && onlySegment.type === "json" && message.trim() === onlySegment.raw.trim()) {
     return (
       <span className="chrome-like-json">
-        <JsonValue level={0} value={onlySegment.parsed} />
+        <JsonValue level={0} value={onlySegment.parsed} onExpandedChange={onContentResize} />
       </span>
     );
   }
@@ -105,7 +109,7 @@ const CollapsibleJson: React.FC<{ message: string }> = ({ message }) => {
           <span key={index}>{seg.text}</span>
         ) : (
           <span key={index} className="chrome-like-json" style={{ marginLeft: 4 }}>
-            <JsonValue level={0} value={seg.parsed} />
+            <JsonValue level={0} value={seg.parsed} onExpandedChange={onContentResize} />
           </span>
         ),
       )}

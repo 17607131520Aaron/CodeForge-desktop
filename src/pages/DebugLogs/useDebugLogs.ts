@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef } from "react";
 
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useDebugLogsStore } from "@/store/debugLogsStore";
@@ -9,6 +9,7 @@ import type { DebugLogItem, JsLogMessagePayload, IJsLogItem, IMetroLogMessage, L
 
 const LOG_SERVER_PATH = "/logs";
 const JS_LOG_MESSAGE_TYPES = new Set(["js-log"]);
+const LOG_BATCH_SIZE = 100;
 
 const createLogServerUrl = () => {
   const hostname = window.location.hostname || "localhost";
@@ -26,7 +27,7 @@ const normalizeLogLevel = (level?: string): string => {
 };
 
 const useDebugLogs = () => {
-  const appendLog = useDebugLogsStore((state) => state.appendLog);
+  const appendLogs = useDebugLogsStore((state) => state.appendLogs);
   const clearLogs = useDebugLogsStore((state) => state.clearLogs);
   const levelFilter = useDebugLogsStore((state) => state.levelFilter);
   const logs = useDebugLogsStore((state) => state.logs);
@@ -40,7 +41,35 @@ const useDebugLogs = () => {
     url: createLogServerUrl(),
   });
   const socketApiRef = useRef(socketApi);
+  const bufferedLogsRef = useRef<DebugLogItem[]>([]);
+  const flushFrameRef = useRef<number | null>(null);
   socketApiRef.current = socketApi;
+  const deferredLogs = useDeferredValue(logs);
+  const deferredSearchText = useDeferredValue(searchText);
+  const deferredLevelFilter = useDeferredValue(levelFilter);
+
+  const flushBufferedLogs = useCallback(() => {
+    flushFrameRef.current = null;
+
+    if (bufferedLogsRef.current.length === 0) {
+      return;
+    }
+
+    const nextLogs = bufferedLogsRef.current.splice(0, LOG_BATCH_SIZE);
+    appendLogs(nextLogs);
+
+    if (bufferedLogsRef.current.length > 0) {
+      flushFrameRef.current = window.requestAnimationFrame(flushBufferedLogs);
+    }
+  }, [appendLogs]);
+
+  const scheduleLogFlush = useCallback(() => {
+    if (flushFrameRef.current !== null) {
+      return;
+    }
+
+    flushFrameRef.current = window.requestAnimationFrame(flushBufferedLogs);
+  }, [flushBufferedLogs]);
 
   const parseMetroMessage = useCallback((data: unknown): IJsLogItem => {
     let level: IJsLogItem["level"] = "unknown";
@@ -279,27 +308,33 @@ const useDebugLogs = () => {
         timestamp: parsedMessage.timestamp || new Date().toISOString(),
       };
 
-      appendLog(nextLog);
-
-      console.log("[DebugLogs] Received JS log message:", parsedMessage);
+      bufferedLogsRef.current.push(nextLog);
+      scheduleLogFlush();
     });
 
     return () => {
       unsubscribe();
+      if (flushFrameRef.current !== null) {
+        window.cancelAnimationFrame(flushFrameRef.current);
+        flushFrameRef.current = null;
+      }
+      bufferedLogsRef.current = [];
     };
-  }, [appendLog, parseMetroMessage]);
+  }, [parseMetroMessage, scheduleLogFlush]);
 
   const filteredLogs = useMemo(() => {
-    return logs.filter((log) => {
-      if (levelFilter !== "all" && log.level !== levelFilter) {
+    const normalizedSearchText = deferredSearchText.trim().toLowerCase();
+
+    return deferredLogs.filter((log) => {
+      if (deferredLevelFilter !== "all" && log.level !== deferredLevelFilter) {
         return false;
       }
-      if (searchText.trim()) {
-        return log.message.toLowerCase().includes(searchText.toLowerCase());
+      if (normalizedSearchText) {
+        return log.message.toLowerCase().includes(normalizedSearchText);
       }
       return true;
     });
-  }, [logs, levelFilter, searchText]);
+  }, [deferredLevelFilter, deferredLogs, deferredSearchText]);
 
   return {
     filteredLogs,

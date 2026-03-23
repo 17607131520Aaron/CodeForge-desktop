@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef } from "react";
 
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useNetworkMonitorStore } from "@/store/networkMonitorStore";
@@ -8,6 +8,7 @@ import { DEFAULT_MAX_REQUESTS, DEFAULT_PORT } from "./constants";
 import type { INetworkMessage } from "./types";
 
 const LOG_SERVER_PATH = "/logs";
+const NETWORK_BATCH_SIZE = 100;
 
 const createLogServerUrl = () => {
   const hostname = window.location.hostname || "localhost";
@@ -24,7 +25,7 @@ const isNetworkMessage = (payload: unknown): payload is INetworkMessage => {
 };
 
 const useNetworkMonitor = () => {
-  const applyNetworkMessage = useNetworkMonitorStore((state) => state.applyNetworkMessage);
+  const applyNetworkMessages = useNetworkMonitorStore((state) => state.applyNetworkMessages);
   const clearRequests = useNetworkMonitorStore((state) => state.clearRequests);
   const isRecording = useNetworkMonitorStore((state) => state.isRecording);
   const methodFilter = useNetworkMonitorStore((state) => state.methodFilter);
@@ -36,6 +37,8 @@ const useNetworkMonitor = () => {
   const setStatusFilter = useNetworkMonitorStore((state) => state.setStatusFilter);
   const statusFilter = useNetworkMonitorStore((state) => state.statusFilter);
   const recordingRef = useRef(isRecording);
+  const bufferedMessagesRef = useRef<INetworkMessage[]>([]);
+  const flushFrameRef = useRef<number | null>(null);
 
   const socketApi = useWebSocket<{ message: [INetworkMessage] }>({
     autoConnect: true,
@@ -46,6 +49,33 @@ const useNetworkMonitor = () => {
 
   const socketApiRef = useRef(socketApi);
   socketApiRef.current = socketApi;
+  const deferredRequests = useDeferredValue(requests);
+  const deferredSearchText = useDeferredValue(searchText);
+  const deferredMethodFilter = useDeferredValue(methodFilter);
+  const deferredStatusFilter = useDeferredValue(statusFilter);
+
+  const flushBufferedMessages = useCallback(() => {
+    flushFrameRef.current = null;
+
+    if (bufferedMessagesRef.current.length === 0) {
+      return;
+    }
+
+    const nextMessages = bufferedMessagesRef.current.splice(0, NETWORK_BATCH_SIZE);
+    applyNetworkMessages(nextMessages, DEFAULT_MAX_REQUESTS);
+
+    if (bufferedMessagesRef.current.length > 0) {
+      flushFrameRef.current = window.requestAnimationFrame(flushBufferedMessages);
+    }
+  }, [applyNetworkMessages]);
+
+  const scheduleMessageFlush = useCallback(() => {
+    if (flushFrameRef.current !== null) {
+      return;
+    }
+
+    flushFrameRef.current = window.requestAnimationFrame(flushBufferedMessages);
+  }, [flushBufferedMessages]);
 
   useEffect(() => {
     recordingRef.current = isRecording;
@@ -57,13 +87,19 @@ const useNetworkMonitor = () => {
         return;
       }
 
-      applyNetworkMessage(payload, DEFAULT_MAX_REQUESTS);
+      bufferedMessagesRef.current.push(payload);
+      scheduleMessageFlush();
     });
 
     return () => {
       unsubscribe();
+      if (flushFrameRef.current !== null) {
+        window.cancelAnimationFrame(flushFrameRef.current);
+        flushFrameRef.current = null;
+      }
+      bufferedMessagesRef.current = [];
     };
-  }, [applyNetworkMessage]);
+  }, [scheduleMessageFlush]);
 
   const handleConnectClick = useCallback(async () => {
     if (socketApi.isConnected) {
@@ -90,18 +126,18 @@ const useNetworkMonitor = () => {
   }, [setIsRecording]);
 
   const filteredRequests = useMemo(() => {
-    const normalizedSearchText = searchText.trim().toLowerCase();
+    const normalizedSearchText = deferredSearchText.trim().toLowerCase();
 
-    return requests.filter((request) => {
-      if (methodFilter !== "all" && request.method.toUpperCase() !== methodFilter) {
+    return deferredRequests.filter((request) => {
+      if (deferredMethodFilter !== "all" && request.method.toUpperCase() !== deferredMethodFilter) {
         return false;
       }
 
-      if (statusFilter === "success" && (!request.status || request.status >= 400)) {
+      if (deferredStatusFilter === "success" && (!request.status || request.status >= 400)) {
         return false;
       }
 
-      if (statusFilter === "error" && !request.error && (!request.status || request.status < 400)) {
+      if (deferredStatusFilter === "error" && !request.error && (!request.status || request.status < 400)) {
         return false;
       }
 
@@ -116,7 +152,7 @@ const useNetworkMonitor = () => {
 
       return searchSource.includes(normalizedSearchText);
     });
-  }, [methodFilter, requests, searchText, statusFilter]);
+  }, [deferredMethodFilter, deferredRequests, deferredSearchText, deferredStatusFilter]);
 
   const handleMethodFilterChange = (nextMethodFilter: typeof methodFilter) => {
     setMethodFilter(nextMethodFilter);

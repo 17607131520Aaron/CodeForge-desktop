@@ -82,7 +82,7 @@ const Netword: React.FC = () => {
       window.cancelAnimationFrame(frameId);
       observer.disconnect();
     };
-  }, [filteredRequests.length]);
+  }, []);
 
   useEffect(() => {
     const handleBeforeUnload = () => {

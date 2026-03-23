@@ -1,10 +1,9 @@
-import React from "react";
+import React, { useMemo } from "react";
 
 import { CopyOutlined } from "@ant-design/icons";
 import { Button, Descriptions, Empty, Space, Table, Tabs, Tag, Typography, message } from "antd";
 
-import JsonValue from "../DebugLogs/JsonValue";
-
+import LazyJsonPanel from "./LazyJsonPanel";
 import { buildCurlCommand } from "./utils";
 
 import type { INetworkRequest } from "./types";
@@ -42,52 +41,45 @@ const formatTime = (timestamp?: number) => {
   return new Date(timestamp).toLocaleString();
 };
 
-const stringifyCopyValue = (value: unknown) => {
-  if (value === undefined) {
-    return "";
-  }
-
-  return typeof value === "string" ? value : JSON.stringify(value, null, 2);
-};
-
 const RequestDetail: React.FC<RequestDetailProps> = ({ request }) => {
-  if (!request) {
-    return (
-      <div className="network-details-empty">
-        <Empty description="请选择左侧接口查看详情" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-      </div>
-    );
-  }
-
-  const curlCommand = buildCurlCommand(request);
-  const requestPayload = getRequestPayload(request);
-  const requestPayloadText = stringifyCopyValue(requestPayload);
-  const responseDataText = stringifyCopyValue(request.responseData);
-  const headerDataSource = Object.entries(request.headers ?? {}).map(([key, value]) => ({
-    key,
-    headerName: key,
-    headerValue: value,
-  }));
-  const responseHeaderDataSource = Object.entries(request.responseHeaders ?? {}).map(([key, value]) => ({
-    key,
-    headerName: key,
-    headerValue: value,
-  }));
-  const headerColumns = [
-    {
-      dataIndex: "headerName",
-      key: "headerName",
-      title: "请求头",
-      width: 180,
-      render: (value: string) => <Text code>{value}</Text>,
-    },
-    {
-      dataIndex: "headerValue",
-      key: "headerValue",
-      title: "值",
-      render: (value: string) => <div className="network-header-value-cell">{value}</div>,
-    },
-  ];
+  const requestPayload = useMemo(() => (request ? getRequestPayload(request) : undefined), [request]);
+  const curlCommand = useMemo(() => (request ? buildCurlCommand(request) : ""), [request]);
+  const headerDataSource = useMemo(
+    () =>
+      Object.entries(request?.headers ?? {}).map(([key, value]) => ({
+        key,
+        headerName: key,
+        headerValue: value,
+      })),
+    [request],
+  );
+  const responseHeaderDataSource = useMemo(
+    () =>
+      Object.entries(request?.responseHeaders ?? {}).map(([key, value]) => ({
+        key,
+        headerName: key,
+        headerValue: value,
+      })),
+    [request],
+  );
+  const headerColumns = useMemo(
+    () => [
+      {
+        dataIndex: "headerName",
+        key: "headerName",
+        title: "请求头",
+        width: 180,
+        render: (value: string) => <Text code>{value}</Text>,
+      },
+      {
+        dataIndex: "headerValue",
+        key: "headerValue",
+        title: "值",
+        render: (value: string) => <div className="network-header-value-cell">{value}</div>,
+      },
+    ],
+    [],
+  );
 
   const handleCopyCurl = async () => {
     try {
@@ -99,15 +91,13 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ request }) => {
     }
   };
 
-  const handleCopyContent = async (content: string) => {
-    try {
-      await navigator.clipboard.writeText(content);
-      message.success("复制成功");
-    } catch (error) {
-      console.error("[Network] Failed to copy content:", error);
-      message.error("复制失败");
-    }
-  };
+  if (!request) {
+    return (
+      <div className="network-details-empty">
+        <Empty description="请选择左侧接口查看详情" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+      </div>
+    );
+  }
 
   const tabItems: TabsProps["items"] = [
     {
@@ -199,20 +189,11 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ request }) => {
       label: "请求载荷",
       children: (
         <div className="network-tab-scroll-area network-json-panel">
-          {requestPayload !== undefined ? (
-            <>
-              <Space className="network-tab-actions">
-                <Button icon={<CopyOutlined />} size="small" onClick={() => handleCopyContent(requestPayloadText)}>
-                  复制请求参数
-                </Button>
-              </Space>
-              <div className="chrome-like-json">
-                <JsonValue defaultExpandedDepth={3} value={requestPayload} />
-              </div>
-            </>
-          ) : (
-            <Empty description="暂无请求载荷" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-          )}
+          <LazyJsonPanel
+            copyLabel="复制请求参数"
+            emptyFallback={<Empty description="暂无请求载荷" image={Empty.PRESENTED_IMAGE_SIMPLE} />}
+            value={requestPayload}
+          />
         </div>
       ),
     },
@@ -222,16 +203,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ request }) => {
       children: (
         <div className="network-tab-scroll-area network-json-panel">
           {request.responseData !== undefined ? (
-            <>
-              <Space className="network-tab-actions">
-                <Button icon={<CopyOutlined />} size="small" onClick={() => handleCopyContent(responseDataText)}>
-                  复制响应数据
-                </Button>
-              </Space>
-              <div className="chrome-like-json">
-                <JsonValue defaultExpandedDepth={3} value={request.responseData} />
-              </div>
-            </>
+            <LazyJsonPanel copyLabel="复制响应数据" value={request.responseData} />
           ) : request.error ? (
             <pre className="network-code-block">{request.error}</pre>
           ) : (

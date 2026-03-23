@@ -55,8 +55,3 @@ app.on("activate", () => {
 app.on("before-quit", () => {
   stopLogServer();
 });
-
-// 应用退出前停止 WebSocket 服务器
-app.on("before-quit", () => {
-  stopLogServer();
-});
