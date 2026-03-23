@@ -157,7 +157,7 @@ const App: React.FC = () => {
               size="large"
               spinning={isLoading}
               style={{ height: "100%", flex: 1 }}
-              tip={isRefreshing ? "页面刷新中..." : "页面加载中..."}
+              description={isRefreshing ? "页面刷新中..." : "页面加载中..."}
             >
               <div className="comprehension-content-spin-inner">
                 <PerformanceMonitor enableConsoleLog id={`Page-${location.pathname}`}>

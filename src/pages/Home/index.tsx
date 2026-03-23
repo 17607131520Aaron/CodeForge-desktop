@@ -202,7 +202,7 @@ const Home: React.FC = () => {
               suffix="个"
               title="文档总数"
               value={mockStats.totalDocuments}
-              valueStyle={{ color: "#1890ff", fontSize: 28, fontWeight: 600 }}
+              styles={{ content: { color: "#1890ff", fontSize: 28, fontWeight: 600 } }}
             />
             <div style={{ marginTop: 8 }}>
               <Text style={{ fontSize: 12 }} type="secondary">
@@ -219,7 +219,7 @@ const Home: React.FC = () => {
               suffix="人"
               title="团队成员"
               value={mockStats.totalTeamMembers}
-              valueStyle={{ color: "#52c41a", fontSize: 28, fontWeight: 600 }}
+              styles={{ content: { color: "#52c41a", fontSize: 28, fontWeight: 600 } }}
             />
             <div style={{ marginTop: 8 }}>
               <Text style={{ fontSize: 12 }} type="secondary">
@@ -236,7 +236,7 @@ const Home: React.FC = () => {
               suffix="个"
               title="今日生成条码"
               value={mockStats.todayBarcodes}
-              valueStyle={{ color: "#fa8c16", fontSize: 28, fontWeight: 600 }}
+              styles={{ content: { color: "#fa8c16", fontSize: 28, fontWeight: 600 } }}
             />
             <div style={{ marginTop: 8 }}>
               <Text style={{ fontSize: 12 }} type="secondary">
@@ -252,7 +252,7 @@ const Home: React.FC = () => {
               suffix="天"
               title="系统运行时长"
               value={mockStats.systemUptime}
-              valueStyle={{ color: "#722ed1", fontSize: 28, fontWeight: 600 }}
+              styles={{ content: { color: "#722ed1", fontSize: 28, fontWeight: 600 } }}
             />
             <div style={{ marginTop: 8 }}>
               <Text style={{ fontSize: 12 }} type="secondary">
@@ -507,7 +507,7 @@ const Home: React.FC = () => {
                 suffix="个"
                 title="文档总数"
                 value={totalDocumentValue}
-                valueStyle={{ color: "#1f2937", fontSize: 20, fontWeight: 600 }}
+                styles={{ content: { color: "#1f2937", fontSize: 20, fontWeight: 600 } }}
               />
             </div>
           </Card>
