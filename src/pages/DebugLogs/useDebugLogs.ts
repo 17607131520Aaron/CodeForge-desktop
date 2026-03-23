@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
 import { useWebSocket } from "@/hooks/useWebSocket";
+import { useDebugLogsStore } from "@/store/debugLogsStore";
 
-import { DEFAULT_MAX_LOGS, DEFAULT_PORT } from "./constants";
+import { DEFAULT_PORT } from "./constants";
 
 import type { DebugLogItem, JsLogMessagePayload, IJsLogItem, IMetroLogMessage, LogLevel } from "./types";
 
@@ -25,9 +26,13 @@ const normalizeLogLevel = (level?: string): string => {
 };
 
 const useDebugLogs = () => {
-  const [logs, setLogs] = useState<DebugLogItem[]>([]);
-  const [levelFilter, setLevelFilter] = useState("log");
-  const [searchText, setSearchText] = useState("");
+  const appendLog = useDebugLogsStore((state) => state.appendLog);
+  const clearLogs = useDebugLogsStore((state) => state.clearLogs);
+  const levelFilter = useDebugLogsStore((state) => state.levelFilter);
+  const logs = useDebugLogsStore((state) => state.logs);
+  const searchText = useDebugLogsStore((state) => state.searchText);
+  const setLevelFilter = useDebugLogsStore((state) => state.setLevelFilter);
+  const setSearchText = useDebugLogsStore((state) => state.setSearchText);
   const socketApi = useWebSocket<{ message: [unknown] }>({
     autoConnect: true,
     reconnection: false,
@@ -237,11 +242,11 @@ const useDebugLogs = () => {
   }, [socketApi]);
 
   const handleClearLogs = useCallback(() => {
-    setLogs([]);
+    clearLogs();
     // eslint-disable-next-line no-console
     console.clear();
     console.log("[DebugLogs] Console logs cleared");
-  }, []);
+  }, [clearLogs]);
 
   // const filteredLogs = logs.filter((log) => {
   //   const matchesLevel = levelFilter === "all" || log.level === levelFilter;
@@ -274,13 +279,7 @@ const useDebugLogs = () => {
         timestamp: parsedMessage.timestamp || new Date().toISOString(),
       };
 
-      setLogs((currentLogs) => {
-        const nextLogs = [...currentLogs, nextLog];
-        if (nextLogs.length <= DEFAULT_MAX_LOGS) {
-          return nextLogs;
-        }
-        return nextLogs.slice(nextLogs.length - DEFAULT_MAX_LOGS);
-      });
+      appendLog(nextLog);
 
       console.log("[DebugLogs] Received JS log message:", parsedMessage);
     });
@@ -288,7 +287,7 @@ const useDebugLogs = () => {
     return () => {
       unsubscribe();
     };
-  }, [parseMetroMessage]);
+  }, [appendLog, parseMetroMessage]);
 
   const filteredLogs = useMemo(() => {
     return logs.filter((log) => {

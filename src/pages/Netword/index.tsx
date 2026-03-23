@@ -9,6 +9,8 @@ import {
 } from "@ant-design/icons";
 import { Badge, Button, Card, Input, Modal, Select, Space, Spin, Tooltip, Typography, Table } from "antd";
 
+import { clearNetworkMonitorPersistedState } from "@/store/networkMonitorStore";
+
 import RequestDetail from "./RequestDetail";
 import useColumns from "./useColumns";
 import useNetworkMonitor from "./useNetworkMonitor";
@@ -81,6 +83,19 @@ const Netword: React.FC = () => {
       observer.disconnect();
     };
   }, [filteredRequests.length]);
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      clearNetworkMonitorPersistedState();
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      clearNetworkMonitorPersistedState();
+    };
+  }, []);
 
   return (
     <div className="network-monitor">

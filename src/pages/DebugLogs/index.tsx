@@ -3,6 +3,8 @@ import React, { useEffect, useRef } from "react";
 import { ClearOutlined, DisconnectOutlined, ReloadOutlined, StopOutlined } from "@ant-design/icons";
 import { Badge, Button, Card, Input, Select, Space, Spin, Tooltip, Typography } from "antd";
 
+import { clearDebugLogsPersistedState } from "@/store/debugLogsStore";
+
 import CollapsibleJson from "./CollapsibleJson";
 import { DEFAULT_PORT, getLogLevelColor, levelOptions } from "./constants";
 import useDebugLogs from "./useDebugLogs";
@@ -37,6 +39,19 @@ const DebugLogs: React.FC = () => {
       el.scrollTop = el.scrollHeight;
     });
   }, [filteredLogs]);
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      clearDebugLogsPersistedState();
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      clearDebugLogsPersistedState();
+    };
+  }, []);
 
   return (
     <div className="rn-debug-logs">

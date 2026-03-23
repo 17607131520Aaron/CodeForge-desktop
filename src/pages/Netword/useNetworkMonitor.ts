@@ -1,13 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
 import { useWebSocket } from "@/hooks/useWebSocket";
+import { useNetworkMonitorStore } from "@/store/networkMonitorStore";
 
 import { DEFAULT_MAX_REQUESTS, DEFAULT_PORT } from "./constants";
 
-import type { INetworkMessage, INetworkRequest } from "./types";
-
-type MethodFilter = "all" | "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
-type StatusFilter = "all" | "success" | "error";
+import type { INetworkMessage } from "./types";
 
 const LOG_SERVER_PATH = "/logs";
 
@@ -26,11 +24,17 @@ const isNetworkMessage = (payload: unknown): payload is INetworkMessage => {
 };
 
 const useNetworkMonitor = () => {
-  const [isRecording, setIsRecording] = useState(true);
-  const [requests, setRequests] = useState<INetworkRequest[]>([]);
-  const [methodFilter, setMethodFilter] = useState<MethodFilter>("all");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [searchText, setSearchText] = useState("");
+  const applyNetworkMessage = useNetworkMonitorStore((state) => state.applyNetworkMessage);
+  const clearRequests = useNetworkMonitorStore((state) => state.clearRequests);
+  const isRecording = useNetworkMonitorStore((state) => state.isRecording);
+  const methodFilter = useNetworkMonitorStore((state) => state.methodFilter);
+  const requests = useNetworkMonitorStore((state) => state.requests);
+  const searchText = useNetworkMonitorStore((state) => state.searchText);
+  const setIsRecording = useNetworkMonitorStore((state) => state.setIsRecording);
+  const setMethodFilter = useNetworkMonitorStore((state) => state.setMethodFilter);
+  const setSearchText = useNetworkMonitorStore((state) => state.setSearchText);
+  const setStatusFilter = useNetworkMonitorStore((state) => state.setStatusFilter);
+  const statusFilter = useNetworkMonitorStore((state) => state.statusFilter);
   const recordingRef = useRef(isRecording);
 
   const socketApi = useWebSocket<{ message: [INetworkMessage] }>({
@@ -47,64 +51,13 @@ const useNetworkMonitor = () => {
     recordingRef.current = isRecording;
   }, [isRecording]);
 
-  const applyNetworkMessage = useCallback((message: INetworkMessage) => {
-    setRequests((currentRequests) => {
-      if (message.type === "network-request") {
-        const nextRequest: INetworkRequest = {
-          baseURL: message.data.baseURL,
-          body: message.data.body,
-          completed: false,
-          data: message.data.data,
-          headers: message.data.headers,
-          id: message.data.id,
-          method: message.data.method,
-          originalUrl: message.data.originalUrl,
-          params: message.data.params,
-          startTime: message.data.startTime,
-          type: message.data.type,
-          url: message.data.url,
-        };
-
-        const withoutCurrent = currentRequests.filter((request) => request.id !== nextRequest.id);
-        return [nextRequest, ...withoutCurrent].slice(0, DEFAULT_MAX_REQUESTS);
-      }
-
-      return currentRequests.map((request) => {
-        if (request.id !== message.data.id) {
-          return request;
-        }
-
-        if (message.type === "network-response") {
-          return {
-            ...request,
-            completed: true,
-            duration: message.data.endTime - request.startTime,
-            endTime: message.data.endTime,
-            responseData: message.data.data,
-            responseHeaders: message.data.headers,
-            responseSize: message.data.size,
-            status: message.data.status,
-          };
-        }
-
-        return {
-          ...request,
-          completed: true,
-          duration: message.data.endTime - request.startTime,
-          endTime: message.data.endTime,
-          error: message.data.error,
-        };
-      });
-    });
-  }, []);
-
   useEffect(() => {
     const unsubscribe = socketApiRef.current.subscribe("message", (payload) => {
       if (!recordingRef.current || !isNetworkMessage(payload)) {
         return;
       }
 
-      applyNetworkMessage(payload);
+      applyNetworkMessage(payload, DEFAULT_MAX_REQUESTS);
     });
 
     return () => {
@@ -129,12 +82,12 @@ const useNetworkMonitor = () => {
   }, [socketApi]);
 
   const handleClearRequests = useCallback(() => {
-    setRequests([]);
-  }, []);
+    clearRequests();
+  }, [clearRequests]);
 
   const toggleRecording = useCallback(() => {
-    setIsRecording((current) => !current);
-  }, []);
+    setIsRecording(!recordingRef.current);
+  }, [setIsRecording]);
 
   const filteredRequests = useMemo(() => {
     const normalizedSearchText = searchText.trim().toLowerCase();
@@ -165,11 +118,11 @@ const useNetworkMonitor = () => {
     });
   }, [methodFilter, requests, searchText, statusFilter]);
 
-  const handleMethodFilterChange = (nextMethodFilter: MethodFilter) => {
+  const handleMethodFilterChange = (nextMethodFilter: typeof methodFilter) => {
     setMethodFilter(nextMethodFilter);
   };
 
-  const handleStatusFilterChange = (nextStatusFilter: StatusFilter) => {
+  const handleStatusFilterChange = (nextStatusFilter: typeof statusFilter) => {
     setStatusFilter(nextStatusFilter);
   };
 
