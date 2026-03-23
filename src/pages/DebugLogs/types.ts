@@ -18,3 +18,19 @@ export interface IMetroLogMessage {
   params?: unknown; // Metro bundler 参数
   [key: string]: unknown;
 }
+
+export interface DebugLogItem {
+  id: string;
+  level: string;
+  message: string;
+  timestamp: string;
+  context?: unknown;
+}
+
+export interface JsLogMessagePayload {
+  type: "js-log";
+  level?: string;
+  message?: string;
+  timestamp?: string;
+  context?: unknown;
+}

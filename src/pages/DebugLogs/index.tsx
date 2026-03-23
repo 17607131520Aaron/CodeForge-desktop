@@ -1,9 +1,10 @@
-import React, { useRef, useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 
 import { ClearOutlined, DisconnectOutlined, ReloadOutlined, StopOutlined } from "@ant-design/icons";
 import { Badge, Button, Card, Input, Select, Space, Spin, Tooltip, Typography } from "antd";
 
-import { levelOptions, DEFAULT_PORT, getLogLevelColor } from "./constants";
+import CollapsibleJson from "./CollapsibleJson";
+import { DEFAULT_PORT, getLogLevelColor, levelOptions } from "./constants";
 import useDebugLogs from "./useDebugLogs";
 
 import "./index.scss";
@@ -11,24 +12,31 @@ import "./index.scss";
 const { Text } = Typography;
 const { Search } = Input;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const filteredLogs: any = [];
-
 const DebugLogs: React.FC = () => {
   const logsContainerRef = useRef<HTMLDivElement | null>(null);
-  const { isConnecting, isConnected, handleConnectClick, handleClose, handleClearLogs } = useDebugLogs();
+  const {
+    filteredLogs,
+    handleClearLogs,
+    handleClose,
+    handleConnectClick,
+    isConnected,
+    isConnecting,
+    levelFilter,
+    searchText,
+    setLevelFilter,
+    setSearchText,
+  } = useDebugLogs();
 
-  // 当日志变化时，自动滚动到底部（类似 Chrome 控制台）
   useEffect(() => {
     const el = logsContainerRef.current;
     if (!el) {
       return;
     }
-    // 使用 requestAnimationFrame，等 DOM 更新完成后再滚动
+
     requestAnimationFrame(() => {
       el.scrollTop = el.scrollHeight;
     });
-  }, []);
+  }, [filteredLogs]);
 
   return (
     <div className="rn-debug-logs">
@@ -71,15 +79,15 @@ const DebugLogs: React.FC = () => {
               options={levelOptions || []}
               placeholder="日志级别"
               style={{ width: "100px" }}
-              value={"all"}
-              // onChange={(value: string) => setLevelFilter(value)}
+              value={levelFilter}
+              onChange={(value: string) => setLevelFilter(value)}
             />
             <Search
               allowClear
               placeholder="搜索日志..."
               style={{ width: 400 }}
-              // value={searchText}
-              // onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchText(e.target.value)}
+              value={searchText}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchText(e.target.value)}
             />
           </Space>
         </Space>
@@ -125,7 +133,7 @@ const DebugLogs: React.FC = () => {
                   <span style={{ color: "#858585", marginRight: 8 }}>
                     {new Date(log.timestamp).toLocaleTimeString()} -
                   </span>
-                  {/* <CollapsibleJson message={log.message} /> */}
+                  <CollapsibleJson message={log.message} />
                 </span>
               </div>
             ))

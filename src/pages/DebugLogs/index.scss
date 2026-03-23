@@ -70,9 +70,10 @@
   &-item {
     padding: 4px 0;
     border-bottom: 1px solid rgb(255 255 255 / 0.05);
-    white-space: pre-wrap;
     word-break: break-word;
     transition: background-color 0.2s;
+    display: flex;
+    align-items: flex-start;
 
     &:hover {
       background-color: rgb(255 255 255 / 0.03);
@@ -115,25 +116,85 @@
   &-message {
     flex: 1;
     color: #d4d4d4;
+    min-width: 0;
+  }
+
+  &-message-text {
+    white-space: pre-wrap;
   }
 
   &-data {
-    padding: 8px;
-    background: rgb(0 0 0 / 0.3);
-    border-radius: 4px;
-    margin-top: 8px;
-    margin-left: 68px;
-    border-left: 2px solid #007acc;
+    margin-top: 4px;
+    padding-left: 4px;
+  }
 
-    pre {
-      margin: 0;
-      padding: 0;
-      font-size: 12px;
-      font-family: Consolas, Monaco, "Courier New", monospace;
-      color: #ce9178;
-      white-space: pre-wrap;
-      word-break: break-word;
+  &-value {
+    white-space: pre-wrap;
+  }
+
+  &-value-string {
+    color: #ce9178;
+  }
+
+  &-value-number,
+  &-value-boolean {
+    color: #b5cea8;
+  }
+
+  &-value-null,
+  &-value-undefined {
+    color: #569cd6;
+  }
+
+  &-value-symbol,
+  &-value-date,
+  &-value-regexp,
+  &-value-function {
+    color: #dcdcaa;
+  }
+
+  &-tree {
+    margin: 0;
+  }
+
+  &-tree-summary {
+    list-style: none;
+    cursor: pointer;
+    color: #9cdcfe;
+
+    &::-webkit-details-marker {
+      display: none;
     }
+
+    &::before {
+      content: "▶";
+      display: inline-block;
+      width: 12px;
+      margin-right: 4px;
+      color: #c5c5c5;
+      transition: transform 0.15s ease;
+    }
+  }
+
+  &-tree[open] > &-tree-summary::before {
+    transform: rotate(90deg);
+  }
+
+  &-tree-children {
+    margin-left: 16px;
+    padding-top: 2px;
+  }
+
+  &-tree-entry {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    line-height: 1.6;
+  }
+
+  &-tree-key {
+    color: #9cdcfe;
+    white-space: nowrap;
   }
 
   &-footer {
@@ -144,4 +205,86 @@
     border-top: 1px solid rgb(255 255 255 / 0.1);
     background: #252526;
   }
+
+
+  // Chrome DevTools 风格的 JSON 查看器
+.chrome-like-json {
+  display: inline-block;
+  font-size: 12px;
+  font-family: Consolas, Monaco, "Courier New", monospace;
+  line-height: 1.5;
+  color: #d4d4d4;
+
+  .json-line {
+    min-height: 18px;
+    line-height: 18px;
+  }
+
+  .json-toggle {
+    display: inline-block;
+    width: 12px;
+    color: #858585;
+    vertical-align: middle;
+    text-align: center;
+
+    &:hover {
+      color: #d4d4d4;
+    }
+  }
+
+  .json-key {
+    color: #9cdcfe; // 蓝色，类似 Chrome
+  }
+
+  .json-string {
+    color: #ce9178; // 橙色，字符串
+  }
+
+  .json-number {
+    color: #b5cea8; // 绿色，数字
+  }
+
+  .json-boolean {
+    color: #569cd6; // 浅蓝色，布尔值
+  }
+
+  .json-null,
+  .json-undefined {
+    color: #569cd6; // 浅蓝色，null/undefined
+  }
+
+  .json-brace,
+  .json-bracket {
+    color: #d4d4d4; // 白色，括号
+  }
+
+  .json-colon {
+    margin: 0 4px;
+    color: #d4d4d4;
+  }
+
+  .json-comma {
+    color: #d4d4d4;
+  }
+
+  .json-preview {
+    margin: 0 4px;
+    color: #858585;
+    font-style: italic;
+  }
+}
+
+// 响应式调整
+@media (width <= 768px) {
+  .rn-debug-logs {
+    padding: 16px;
+
+    &-toolbar {
+      .ant-space {
+        flex-direction: column;
+        align-items: flex-start !important;
+      }
+    }
+  }
+}
 }
