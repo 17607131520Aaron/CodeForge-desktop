@@ -110,6 +110,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          gh --version
+
           if [ "${GITHUB_REF_TYPE:-}" = "tag" ] && [ -n "${GITHUB_REF_NAME:-}" ]; then
             TAG_NAME="$GITHUB_REF_NAME"
           else
@@ -118,8 +120,16 @@ jobs:
           fi
 
           echo "Using release tag: $TAG_NAME"
+          echo "Repo: $GITHUB_REPOSITORY"
+          echo "Commit: $GITHUB_SHA"
 
-          gh release view "$TAG_NAME" >/dev/null 2>&1 || gh release create "$TAG_NAME" --title "$TAG_NAME" --notes "Automated build artifacts."
+          if ! gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$TAG_NAME" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "$TAG_NAME" \
+              --notes "Automated build artifacts."
+          fi
           mapfile -t files < <(find release-assets -type f \( \
             -name "*.zip" -o -name "*.dmg" -o -name "*.pkg" -o -name "RELEASES.json" -o \
             -name "*.exe" -o -name "*.msi" -o -name "*.nupkg" -o \
@@ -129,4 +139,4 @@ jobs:
             echo "No release artifacts found."
             exit 1
           fi
-          gh release upload "$TAG_NAME" "${files[@]}" --clobber
+          gh release upload "$TAG_NAME" "${files[@]}" --repo "$GITHUB_REPOSITORY" --clobber
