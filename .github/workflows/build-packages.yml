@@ -125,6 +125,7 @@ jobs:
           echo "Using release tag: $TAG_NAME"
           echo "Repo: $GITHUB_REPOSITORY"
           echo "Commit: $GITHUB_SHA"
+          SHOULD_UPLOAD=true
 
           # Ensure tag ref exists; create it automatically when missing.
           if ! gh api --silent --method GET "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG_NAME" >/dev/null 2>&1; then
@@ -136,8 +137,14 @@ jobs:
               echo "Repository rules are likely blocking this token from creating refs."
               echo "Recommended: add repository secret RELEASE_TOKEN (PAT) with contents:write"
               echo "and allow that actor to bypass ref-creation restrictions in rulesets."
-              exit 1
+              SHOULD_UPLOAD=false
             fi
+          fi
+
+          if [ "$SHOULD_UPLOAD" != "true" ]; then
+            echo "Skipping GitHub Release publish because tag creation is not permitted."
+            echo "Build artifacts are still available in workflow artifacts."
+            exit 0
           fi
 
           # Prefer querying by tag via API (works even when release is immutable).
