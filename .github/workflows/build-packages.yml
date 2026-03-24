@@ -108,12 +108,17 @@ jobs:
 
       - name: Attach files to release
         env:
-          # Prefer a dedicated PAT for release operations.
-          # Fallback to the default Actions token.
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN != '' && secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          # Use dedicated PAT for release/tag operations.
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: |
           gh --version
           set -euo pipefail
+
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "Missing RELEASE_TOKEN secret."
+            echo "Please set repository secret RELEASE_TOKEN (PAT with contents:write)."
+            exit 1
+          fi
 
           if [ "${GITHUB_REF_TYPE:-}" = "tag" ] && [ -n "${GITHUB_REF_NAME:-}" ]; then
             TAG_NAME="$GITHUB_REF_NAME"
@@ -125,6 +130,9 @@ jobs:
           echo "Using release tag: $TAG_NAME"
           echo "Repo: $GITHUB_REPOSITORY"
           echo "Commit: $GITHUB_SHA"
+          TOKEN_LOGIN="$(gh api user --jq .login 2>/dev/null || echo unknown)"
+          echo "Token actor: $TOKEN_LOGIN"
+
           # Ensure tag ref exists; create it automatically when missing.
           if ! gh api --silent --method GET "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG_NAME" >/dev/null 2>&1; then
             echo "Tag $TAG_NAME does not exist, creating it at $GITHUB_SHA ..."
@@ -133,8 +141,8 @@ jobs:
               -f sha="$GITHUB_SHA" >/dev/null; then
               echo "Failed to create tag ref: $TAG_NAME"
               echo "Repository rules are likely blocking this token from creating refs."
-              echo "Recommended: add repository secret RELEASE_TOKEN (PAT) with contents:write"
-              echo "and allow that actor to bypass ref-creation restrictions in rulesets."
+              echo "Please allow this actor in ruleset bypass: $TOKEN_LOGIN"
+              echo "Also ensure ruleset target includes tag pattern: v*"
               exit 1
             fi
           fi
