@@ -5,6 +5,8 @@ import { Button, Space, Typography, message } from "antd";
 
 import JsonValue from "../DebugLogs/JsonValue";
 
+import { normalizeJsonLikeValue, stringifyDisplayValue } from "./utils";
+
 const { Text } = Typography;
 
 const LARGE_JSON_STRING_THRESHOLD = 16 * 1024;
@@ -18,14 +20,6 @@ type LazyJsonPanelProps = {
   value: unknown;
 };
 
-const stringifyCopyValue = (value: unknown) => {
-  if (value === undefined) {
-    return "";
-  }
-
-  return typeof value === "string" ? value : JSON.stringify(value, null, 2);
-};
-
 const truncateText = (value: string) => {
   if (value.length <= PREVIEW_STRING_LENGTH) {
     return value;
@@ -36,13 +30,14 @@ const truncateText = (value: string) => {
 
 const LazyJsonPanel: React.FC<LazyJsonPanelProps> = ({ copyLabel, emptyFallback, value }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const normalizedValue = useMemo(() => normalizeJsonLikeValue(value), [value]);
 
   const serializedPreview = useMemo(() => {
     if (value === undefined) {
       return null;
     }
 
-    return stringifyCopyValue(value);
+    return stringifyDisplayValue(value);
   }, [value]);
 
   const isLargePayload = (serializedPreview?.length ?? 0) > LARGE_JSON_STRING_THRESHOLD;
@@ -83,7 +78,7 @@ const LazyJsonPanel: React.FC<LazyJsonPanelProps> = ({ copyLabel, emptyFallback,
         <div className="chrome-like-json">
           <JsonValue
             defaultExpandedDepth={isLargePayload ? DEFAULT_COLLAPSED_DEPTH : DEFAULT_EXPANDED_DEPTH}
-            value={value}
+            value={normalizedValue}
           />
         </div>
       )}

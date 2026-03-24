@@ -4,7 +4,7 @@ import { CopyOutlined } from "@ant-design/icons";
 import { Button, Descriptions, Empty, Space, Table, Tabs, Tag, Typography, message } from "antd";
 
 import LazyJsonPanel from "./LazyJsonPanel";
-import { buildCurlCommand } from "./utils";
+import { buildCurlCommand, extractQueryParamsFromUrl, normalizeJsonLikeValue } from "./utils";
 
 import type { INetworkRequest } from "./types";
 import type { TabsProps } from "antd";
@@ -31,7 +31,60 @@ const getStatusTagColor = (status?: number) => {
   return "processing";
 };
 
-const getRequestPayload = (request: INetworkRequest) => request.body ?? request.data ?? request.params;
+const isMeaningfulPayload = (value: unknown) => {
+  if (value === null || value === undefined) {
+    return false;
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed !== "" && trimmed !== "{}" && trimmed !== "[]";
+  }
+
+  if (Array.isArray(value)) {
+    return value.length > 0;
+  }
+
+  if (typeof value === "object") {
+    return Object.keys(value).length > 0;
+  }
+
+  return true;
+};
+
+const getRequestPayload = (request: INetworkRequest) => {
+  const method = request.method.toUpperCase();
+  const normalizedParams = normalizeJsonLikeValue(request.params);
+  const normalizedBody = normalizeJsonLikeValue(request.body);
+  const normalizedData = normalizeJsonLikeValue(request.data);
+  const urlQueryParams = extractQueryParamsFromUrl(request.url);
+
+  if (method === "GET") {
+    if (isMeaningfulPayload(normalizedParams)) {
+      return normalizedParams;
+    }
+
+    if (isMeaningfulPayload(urlQueryParams)) {
+      return urlQueryParams;
+    }
+
+    return isMeaningfulPayload(normalizedData) ? normalizedData : normalizedBody;
+  }
+
+  if (isMeaningfulPayload(normalizedBody)) {
+    return normalizedBody;
+  }
+
+  if (isMeaningfulPayload(normalizedData)) {
+    return normalizedData;
+  }
+
+  if (isMeaningfulPayload(normalizedParams)) {
+    return normalizedParams;
+  }
+
+  return urlQueryParams;
+};
 
 const formatTime = (timestamp?: number) => {
   if (!timestamp) {
@@ -43,6 +96,10 @@ const formatTime = (timestamp?: number) => {
 
 const RequestDetail: React.FC<RequestDetailProps> = ({ request }) => {
   const requestPayload = useMemo(() => (request ? getRequestPayload(request) : undefined), [request]);
+  const responsePayload = useMemo(
+    () => (request ? normalizeJsonLikeValue(request.responseData) : undefined),
+    [request],
+  );
   const curlCommand = useMemo(() => (request ? buildCurlCommand(request) : ""), [request]);
   const headerDataSource = useMemo(
     () =>
@@ -132,7 +189,8 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ request }) => {
             <Descriptions.Item label="基础地址">{request.baseURL || "-"}</Descriptions.Item>
             <Descriptions.Item label="原始地址">{request.originalUrl || "-"}</Descriptions.Item>
             <Descriptions.Item label="错误信息">
-              <Text type={request.error ? "danger" : undefined}>{request.error || "-"}</Text>
+              {/* <Text type={request.error ? "danger" : undefined}>{request.error || "-"}</Text> */}
+              <Text {...(request.error ? { type: "danger" } : {})}>{request.error || "-"}</Text>
             </Descriptions.Item>
           </Descriptions>
         </div>
@@ -203,7 +261,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ request }) => {
       children: (
         <div className="network-tab-scroll-area network-json-panel">
           {request.responseData !== undefined ? (
-            <LazyJsonPanel copyLabel="复制响应数据" value={request.responseData} />
+            <LazyJsonPanel copyLabel="复制响应数据" value={responsePayload} />
           ) : request.error ? (
             <pre className="network-code-block">{request.error}</pre>
           ) : (
