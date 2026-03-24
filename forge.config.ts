@@ -19,7 +19,15 @@ const config: ForgeConfig = {
     name: "AI助理调试工具",
   },
   rebuildConfig: {},
-  makers: [new MakerSquirrel({}), new MakerZIP({}, ["darwin"]), new MakerRpm({}), new MakerDeb({})],
+  makers: [
+    new MakerSquirrel({
+      authors: "17607131520Aaron",
+      description: "AI助理调试工具",
+    }),
+    new MakerZIP({}, ["darwin"]),
+    new MakerRpm({}),
+    new MakerDeb({}),
+  ],
   publishers: [
     new PublisherGithub({
       repository: {
