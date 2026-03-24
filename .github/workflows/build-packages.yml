@@ -115,7 +115,7 @@ jobs:
           if [ "${GITHUB_REF_TYPE:-}" = "tag" ] && [ -n "${GITHUB_REF_NAME:-}" ]; then
             TAG_NAME="$GITHUB_REF_NAME"
           else
-            VERSION="$(node -p "require('./package.json').version")"
+            VERSION="$(node -p "require('./app.json').appVersion")"
             TAG_NAME="v$VERSION"
           fi
 
