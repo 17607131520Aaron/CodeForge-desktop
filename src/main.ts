@@ -1,9 +1,9 @@
 import path from "node:path";
 
-import { app, BrowserWindow, nativeImage } from "electron";
+import { app, BrowserWindow, nativeImage, dialog, autoUpdater } from "electron";
 
 import started from "electron-squirrel-startup";
-import { makeUserNotifier, updateElectronApp, UpdateSourceType } from "update-electron-app";
+import { updateElectronApp, UpdateSourceType } from "update-electron-app";
 
 import { startLogServer, stopLogServer } from "./server/log-server";
 
@@ -12,12 +12,6 @@ const APP_DISPLAY_NAME = "AI助理调试工具";
 const APP_ICON_PATH = "src/assets/app_icon.jpg";
 const APP_VERSION = "1.0.0";
 const UPDATE_REPO = "17607131520Aaron/CodeForge-desktop";
-const notifyUser = makeUserNotifier({
-  title: "发现新版本",
-  detail: "新版本已下载完成，点击重启立即安装更新。",
-  restartButtonText: "重启并更新",
-  laterButtonText: "稍后",
-});
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -57,8 +51,9 @@ app.on("ready", () => {
     app.dock?.setIcon(nativeImage.createFromPath(path.resolve(app.getAppPath(), APP_ICON_PATH)));
   }
 
-  // Check updates only in packaged builds.
-  if (app.isPackaged) {
+  // Only check updates in production mode (packaged + not Vite dev-server).
+  // In local dev (`electron-forge start`) we should not check updates.
+  if (app.isPackaged && !MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     updateElectronApp({
       updateSource: {
         type: UpdateSourceType.ElectronPublicUpdateService,
@@ -67,14 +62,22 @@ app.on("ready", () => {
       notifyUser: true,
       updateInterval: "10 minutes",
       onNotifyUser: (info) => {
-        if (info.releaseName || info.releaseNotes) {
-          console.info("[auto-update] release info:", {
-            releaseName: info.releaseName,
-            releaseNotes: info.releaseNotes,
-            releaseDate: info.releaseDate,
-          });
-        }
-        notifyUser(info);
+        const releaseName = info.releaseName || "";
+        const releaseNotes = info.releaseNotes || "";
+
+        // update-electron-app won't use its default dialog when onNotifyUser is provided,
+        // so we show our own and then apply the update.
+        dialog
+          .showMessageBox({
+            type: "info",
+            title: "发现新版本",
+            message: releaseName || "新版本已下载完成",
+            detail: releaseNotes || "点击重启立即安装更新。",
+            buttons: ["重启并更新"],
+            defaultId: 0,
+          })
+          .then(() => autoUpdater.quitAndInstall())
+          .catch(() => autoUpdater.quitAndInstall());
       },
       logger: console,
     });

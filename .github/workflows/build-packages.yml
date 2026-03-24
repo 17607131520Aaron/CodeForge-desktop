@@ -47,6 +47,7 @@ jobs:
             out/make/**/*.zip
             out/make/**/*.dmg
             out/make/**/*.pkg
+            out/make/**/RELEASES.json
           if-no-files-found: error
 
   build-macos-x64:
@@ -86,6 +87,7 @@ jobs:
             out/make/**/*.zip
             out/make/**/*.dmg
             out/make/**/*.pkg
+            out/make/**/RELEASES.json
           if-no-files-found: error
 
   build-windows-x64:
@@ -143,7 +145,7 @@ jobs:
         run: |
           gh release view "$TAG_NAME" >/dev/null 2>&1 || gh release create "$TAG_NAME" --title "$TAG_NAME" --notes "Automated build artifacts."
           mapfile -t files < <(find release-assets -type f \( \
-            -name "*.zip" -o -name "*.dmg" -o -name "*.pkg" -o \
+            -name "*.zip" -o -name "*.dmg" -o -name "*.pkg" -o -name "RELEASES.json" -o \
             -name "*.exe" -o -name "*.msi" -o -name "*.nupkg" -o \
             -name "RELEASES" \
           \))

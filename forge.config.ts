@@ -27,7 +27,7 @@ const config: ForgeConfig = {
         name: process.env["GITHUB_REPO"] ?? "CodeForge-desktop",
       },
       generateReleaseNotes: true,
-      draft: true,
+      draft: false,
       prerelease: false,
     }),
   ],
