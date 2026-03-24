@@ -10,7 +10,7 @@ import { startLogServer, stopLogServer } from "./server/log-server";
 // App metadata managed by scripts/update_app_meta.py
 const APP_DISPLAY_NAME = "AI助理调试工具";
 const APP_ICON_PATH = "src/assets/app_icon.jpg";
-const APP_VERSION = "1.0.0";
+const APP_VERSION = "1.1.2";
 const UPDATE_REPO = "17607131520Aaron/CodeForge-desktop";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.

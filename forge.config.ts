@@ -27,8 +27,10 @@ const config: ForgeConfig = {
         name: process.env["GITHUB_REPO"] ?? "CodeForge-desktop",
       },
       generateReleaseNotes: true,
-      draft: false,
-      prerelease: false,
+      // Use draft releases to avoid "immutable release" upload failures.
+      // You can override with env: GITHUB_RELEASE_DRAFT=false
+      draft: process.env["GITHUB_RELEASE_DRAFT"] !== "false",
+      prerelease: process.env["GITHUB_RELEASE_PRERELEASE"] === "true",
     }),
   ],
   plugins: [
