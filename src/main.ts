@@ -1,10 +1,14 @@
 import path from "node:path";
 
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, nativeImage } from "electron";
 
 import started from "electron-squirrel-startup";
 
 import { startLogServer, stopLogServer } from "./server/log-server";
+
+// App metadata managed by scripts/update_app_meta.py
+const APP_DISPLAY_NAME = "AI助理调试工具";
+const APP_ICON_PATH = "src/assets/app_icon.jpg";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -12,10 +16,14 @@ if (started) {
 }
 
 const createWindow = () => {
+  const iconPath = path.resolve(app.getAppPath(), APP_ICON_PATH);
+
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
+    title: APP_DISPLAY_NAME,
+    icon: iconPath,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
     },
@@ -33,6 +41,11 @@ const createWindow = () => {
 };
 
 app.on("ready", () => {
+  app.setName(APP_DISPLAY_NAME);
+  if (process.platform === "darwin") {
+    app.dock?.setIcon(nativeImage.createFromPath(path.resolve(app.getAppPath(), APP_ICON_PATH)));
+  }
+
   createWindow();
   startLogServer(8082, "/logs");
 });

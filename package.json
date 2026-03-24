@@ -1,6 +1,6 @@
 {
   "name": "codeforge-desktop",
-  "productName": "codeforge-desktop",
+  "productName": "AI助理调试工具",
   "version": "1.0.0",
   "description": "My Electron application description",
   "main": ".vite/build/main.js",
@@ -10,14 +10,9 @@
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
-    "lint": "eslint --ext .ts,.tsx ."
+    "lint": "eslint --ext .ts,.tsx .",
+    "app:meta": "python3 -B scripts/update_app_meta.py"
   },
-  "keywords": [],
-  "author": {
-    "name": "v-huangyafeng3",
-    "email": "v-huangyafeng3@xiaomi.com"
-  },
-  "license": "MIT",
   "pnpm": {
     "onlyBuiltDependencies": [
       "electron",
