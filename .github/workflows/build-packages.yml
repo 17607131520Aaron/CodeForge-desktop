@@ -108,7 +108,9 @@ jobs:
 
       - name: Attach files to release
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Prefer a dedicated PAT for release operations.
+          # Fallback to the default Actions token.
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN != '' && secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           gh --version
           set -euo pipefail
@@ -124,15 +126,26 @@ jobs:
           echo "Repo: $GITHUB_REPOSITORY"
           echo "Commit: $GITHUB_SHA"
 
-          # Prefer querying by tag via API (works even when the release is "immutable").
+          # Ensure tag ref exists; create it automatically when missing.
+          if ! gh api --silent --method GET "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG_NAME" >/dev/null 2>&1; then
+            echo "Tag $TAG_NAME does not exist, creating it at $GITHUB_SHA ..."
+            if ! gh api --silent --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
+              -f ref="refs/tags/$TAG_NAME" \
+              -f sha="$GITHUB_SHA" >/dev/null; then
+              echo "Failed to create tag ref: $TAG_NAME"
+              echo "Repository rules are likely blocking this token from creating refs."
+              echo "Recommended: add repository secret RELEASE_TOKEN (PAT) with contents:write"
+              echo "and allow that actor to bypass ref-creation restrictions in rulesets."
+              exit 1
+            fi
+          fi
+
+          # Prefer querying by tag via API (works even when release is immutable).
           if ! gh api --silent --method GET "repos/$GITHUB_REPOSITORY/releases/tags/$TAG_NAME" >/dev/null 2>&1; then
-            # If missing, create it. If GitHub says the tag is already used by an immutable release,
-            # we'll just proceed to upload assets to the existing release.
             gh release create "$TAG_NAME" \
               --repo "$GITHUB_REPOSITORY" \
-              --target "$GITHUB_SHA" \
               --title "$TAG_NAME" \
-              --notes "Automated build artifacts." || true
+              --notes "Automated build artifacts."
           fi
 
           # Final sanity check: release must exist before upload.
