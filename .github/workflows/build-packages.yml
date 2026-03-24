@@ -89,10 +89,18 @@ jobs:
 
   publish-release-assets:
     name: Publish artifacts to GitHub Release
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     needs: [build-macos, build-windows-x64]
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24.x"
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -101,8 +109,16 @@ jobs:
       - name: Attach files to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG_NAME: ${{ github.ref_name }}
         run: |
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ] && [ -n "${GITHUB_REF_NAME:-}" ]; then
+            TAG_NAME="$GITHUB_REF_NAME"
+          else
+            VERSION="$(node -p "require('./package.json').version")"
+            TAG_NAME="v$VERSION"
+          fi
+
+          echo "Using release tag: $TAG_NAME"
+
           gh release view "$TAG_NAME" >/dev/null 2>&1 || gh release create "$TAG_NAME" --title "$TAG_NAME" --notes "Automated build artifacts."
           mapfile -t files < <(find release-assets -type f \( \
             -name "*.zip" -o -name "*.dmg" -o -name "*.pkg" -o -name "RELEASES.json" -o \
