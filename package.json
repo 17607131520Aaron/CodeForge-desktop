@@ -15,13 +15,7 @@
     "make:desktop:all": "pnpm make:mac:arm64 && pnpm make:mac:x64 && pnpm make:win:x64",
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx .",
-    "app:meta": "python3 -B scripts/update_app_meta.py",
-    "release:notes": "python3 -B scripts/generate_release_notes.py --output release-notes.md",
-    "release:publish": "python3 -B scripts/publish_release_notes.py",
-    "release": "pnpm app:meta && pnpm release:notes && pnpm release:publish",
-    "release:patch": "echo \"Please edit app.json appVersion, then run: pnpm release\" && exit 1",
-    "release:minor": "echo \"Please edit app.json appVersion, then run: pnpm release\" && exit 1",
-    "release:major": "echo \"Please edit app.json appVersion, then run: pnpm release\" && exit 1"
+    "app:meta": "python3 -B scripts/update_app_meta.py"
   },
   "repository": {
     "type": "git",
