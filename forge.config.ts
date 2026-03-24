@@ -7,6 +7,8 @@ import { PublisherGithub } from '@electron-forge/publisher-github';
 import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
+import { execFileSync } from 'node:child_process';
+import path from 'node:path';
 
 const config: ForgeConfig = {
   packagerConfig: {
@@ -19,6 +21,26 @@ const config: ForgeConfig = {
     name: "AI助理调试工具",
   },
   rebuildConfig: {},
+  hooks: {
+    postMake: async (_forgeConfig, makeResults) => {
+      const helperScriptPath = path.resolve(process.cwd(), "scripts/fix_macos_quarantine.command");
+
+      for (const result of makeResults) {
+        if (result.platform !== "darwin") {
+          continue;
+        }
+
+        for (const artifactPath of result.artifacts) {
+          if (!artifactPath.endsWith(".zip")) {
+            continue;
+          }
+
+          // Append helper script to zip root for easier first launch on unsigned builds.
+          execFileSync("zip", ["-j", artifactPath, helperScriptPath], { stdio: "inherit" });
+        }
+      }
+    },
+  },
   makers: [new MakerSquirrel({}), new MakerZIP({}, ["darwin"]), new MakerRpm({}), new MakerDeb({})],
   publishers: [
     new PublisherGithub({
