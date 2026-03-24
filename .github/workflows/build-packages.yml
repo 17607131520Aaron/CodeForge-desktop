@@ -21,6 +21,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -34,11 +39,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
-      - name: Install Python dependency for icon conversion
-        run: python3 -m pip install Pillow
+      - name: Setup venv + Pillow (macOS icon conversion)
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install Pillow
 
       - name: Sync app metadata
-        run: pnpm app:meta
+        run: .venv/bin/python -B scripts/update_app_meta.py
 
       - name: Build package
         run: |
@@ -66,6 +75,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -80,7 +94,7 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       - name: Sync app metadata
-        run: pnpm app:meta
+        run: python -B scripts/update_app_meta.py
 
       - name: Build package
         run: pnpm make:win:x64
