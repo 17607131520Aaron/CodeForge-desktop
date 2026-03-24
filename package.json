@@ -9,9 +9,23 @@
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",
+    "make:mac:arm64": "electron-forge make --platform=darwin --arch=arm64",
+    "make:mac:x64": "electron-forge make --platform=darwin --arch=x64",
+    "make:win:x64": "electron-forge make --platform=win32 --arch=x64",
+    "make:desktop:all": "pnpm make:mac:arm64 && pnpm make:mac:x64 && pnpm make:win:x64",
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx .",
-    "app:meta": "python3 -B scripts/update_app_meta.py"
+    "app:meta": "python3 -B scripts/update_app_meta.py",
+    "release:notes": "python3 -B scripts/generate_release_notes.py --output release-notes.md",
+    "release:publish": "python3 -B scripts/publish_release_notes.py",
+    "release": "pnpm app:meta && pnpm release:notes && pnpm release:publish",
+    "release:patch": "echo \"Please edit app.json appVersion, then run: pnpm release\" && exit 1",
+    "release:minor": "echo \"Please edit app.json appVersion, then run: pnpm release\" && exit 1",
+    "release:major": "echo \"Please edit app.json appVersion, then run: pnpm release\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/17607131520Aaron/CodeForge-desktop.git"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
@@ -28,6 +42,7 @@
     "@electron-forge/plugin-auto-unpack-natives": "^7.11.1",
     "@electron-forge/plugin-fuses": "^7.11.1",
     "@electron-forge/plugin-vite": "^7.11.1",
+    "@electron-forge/publisher-github": "^7.11.1",
     "@electron-forge/shared-types": "^7.11.1",
     "@electron/fuses": "^1.8.0",
     "@eslint/js": "^9.39.2",
@@ -75,6 +90,7 @@
     "sass": "^1.97.2",
     "semver": "^7.7.3",
     "socket.io-client": "^4.8.3",
+    "update-electron-app": "^3.1.2",
     "ws": "^8.19.0",
     "zustand": "^5.0.10"
   }

@@ -59,6 +59,7 @@ typings/
 
 # dotenv environment variables file
 .env
+.env.local
 .env.test
 
 # parcel-bundler cache (https://parceljs.org/)
@@ -94,3 +95,9 @@ out/
 # Python cache
 __pycache__/
 *.pyc
+
+# Generated release notes artifact
+release-notes.md
+
+# Local app config (contains secrets like githubToken)
+app.json

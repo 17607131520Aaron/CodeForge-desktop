@@ -1,0 +1,154 @@
+name: Build Desktop Packages
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos-arm64:
+    name: Build macOS arm64
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Python dependency for icon conversion
+        run: python3 -m pip install Pillow
+
+      - name: Sync app metadata
+        run: pnpm app:meta
+
+      - name: Build package
+        run: pnpm make:mac:arm64
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-arm64
+          path: |
+            out/make/**/*.zip
+            out/make/**/*.dmg
+            out/make/**/*.pkg
+          if-no-files-found: error
+
+  build-macos-x64:
+    name: Build macOS x64
+    runs-on: macos-13
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Python dependency for icon conversion
+        run: python3 -m pip install Pillow
+
+      - name: Sync app metadata
+        run: pnpm app:meta
+
+      - name: Build package
+        run: pnpm make:mac:x64
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-x64
+          path: |
+            out/make/**/*.zip
+            out/make/**/*.dmg
+            out/make/**/*.pkg
+          if-no-files-found: error
+
+  build-windows-x64:
+    name: Build Windows x64
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Sync app metadata
+        run: pnpm app:meta
+
+      - name: Build package
+        run: pnpm make:win:x64
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-x64
+          path: |
+            out/make/**/*.exe
+            out/make/**/*.msi
+            out/make/**/*.nupkg
+            out/make/**/RELEASES
+          if-no-files-found: error
+
+  publish-release-assets:
+    name: Publish artifacts to GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build-macos-arm64, build-macos-x64, build-windows-x64]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: Attach files to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          gh release view "$TAG_NAME" >/dev/null 2>&1 || gh release create "$TAG_NAME" --title "$TAG_NAME" --notes "Automated build artifacts."
+          mapfile -t files < <(find release-assets -type f \( \
+            -name "*.zip" -o -name "*.dmg" -o -name "*.pkg" -o \
+            -name "*.exe" -o -name "*.msi" -o -name "*.nupkg" -o \
+            -name "RELEASES" \
+          \))
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No release artifacts found."
+            exit 1
+          fi
+          gh release upload "$TAG_NAME" "${files[@]}" --clobber
