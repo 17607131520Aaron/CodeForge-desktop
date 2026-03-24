@@ -111,6 +111,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh --version
+          set -euo pipefail
 
           if [ "${GITHUB_REF_TYPE:-}" = "tag" ] && [ -n "${GITHUB_REF_NAME:-}" ]; then
             TAG_NAME="$GITHUB_REF_NAME"
@@ -123,13 +124,20 @@ jobs:
           echo "Repo: $GITHUB_REPOSITORY"
           echo "Commit: $GITHUB_SHA"
 
-          if ! gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+          # Prefer querying by tag via API (works even when the release is "immutable").
+          if ! gh api --silent --method GET "repos/$GITHUB_REPOSITORY/releases/tags/$TAG_NAME" >/dev/null 2>&1; then
+            # If missing, create it. If GitHub says the tag is already used by an immutable release,
+            # we'll just proceed to upload assets to the existing release.
             gh release create "$TAG_NAME" \
               --repo "$GITHUB_REPOSITORY" \
               --target "$GITHUB_SHA" \
               --title "$TAG_NAME" \
-              --notes "Automated build artifacts."
+              --notes "Automated build artifacts." || true
           fi
+
+          # Final sanity check: release must exist before upload.
+          gh api --silent --method GET "repos/$GITHUB_REPOSITORY/releases/tags/$TAG_NAME" >/dev/null
+
           mapfile -t files < <(find release-assets -type f \( \
             -name "*.zip" -o -name "*.dmg" -o -name "*.pkg" -o -name "RELEASES.json" -o \
             -name "*.exe" -o -name "*.msi" -o -name "*.nupkg" -o \
