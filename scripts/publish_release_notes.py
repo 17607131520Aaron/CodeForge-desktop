@@ -16,15 +16,11 @@ def run(cmd: list[str]) -> None:
     subprocess.run(cmd, cwd=ROOT, check=True)
 
 
-def load_token_from_app_config() -> None:
+def normalize_token_env() -> None:
     if os.environ.get("GITHUB_TOKEN"):
         return
-    if not APP_CONFIG_PATH.exists():
-        return
-    data = json.loads(APP_CONFIG_PATH.read_text(encoding="utf-8"))
-    token = str(data.get("githubToken", "")).strip()
-    if token:
-        os.environ["GITHUB_TOKEN"] = token
+    if os.environ.get("GH_TOKEN"):
+        os.environ["GITHUB_TOKEN"] = os.environ["GH_TOKEN"]
 
 
 def read_version() -> str:
@@ -38,14 +34,16 @@ def read_version() -> str:
 def main() -> None:
     if not NOTES_PATH.exists():
         raise FileNotFoundError("release-notes.md not found. Run generate step first.")
-    load_token_from_app_config()
+    normalize_token_env()
     if not os.environ.get("GITHUB_TOKEN"):
         raise EnvironmentError(
             "Missing GITHUB_TOKEN.\n"
-            "Set it in app.json (githubToken), for example:\n"
-            '  "githubToken": "ghp_xxx"\n\n'
-            "Or temporary for current terminal:\n"
+            "Set it for the current terminal:\n"
             "  export GITHUB_TOKEN=ghp_xxx\n"
+            "Or:\n"
+            "  export GH_TOKEN=ghp_xxx\n"
+            "Or authenticate once with GitHub CLI:\n"
+            "  gh auth login\n"
             "Then rerun:\n"
             "  pnpm release:publish"
         )
