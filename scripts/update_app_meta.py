@@ -1,16 +1,14 @@
-#!/usr/bin/env python3
-"""
-Update desktop app display name and icon path.
-
-Edit APP_NAME and ICON_PATH below, then run:
-python3 scripts/update_app_meta.py
-"""
-
 from __future__ import annotations
 
 import json
 import re
+import sys
 from pathlib import Path
+
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
 
 # ====== Configure these two variables ======
 APP_NAME = "AI助理调试工具"
@@ -21,6 +19,9 @@ ROOT = Path(__file__).resolve().parent.parent
 PACKAGE_JSON_PATH = ROOT / "package.json"
 FORGE_CONFIG_PATH = ROOT / "forge.config.ts"
 MAIN_TS_PATH = ROOT / "src" / "main.ts"
+GENERATED_ICNS_PATH = ROOT / "src" / "assets" / "app_icon.generated.icns"
+
+sys.dont_write_bytecode = True
 
 
 def update_package_json() -> None:
@@ -40,14 +41,15 @@ def replace_once(content: str, pattern: str, replacement: str, description: str)
     return updated
 
 
-def update_forge_config() -> None:
+def update_forge_config() -> str:
     content = FORGE_CONFIG_PATH.read_text(encoding="utf-8")
+    packager_icon_path = build_packager_icon()
 
     # Update packager icon path
     content = replace_once(
         content,
         r'(^\s*icon:\s*)["\'][^"\']*["\']',
-        rf'\1"{ICON_PATH}"',
+        rf'\1"{packager_icon_path}"',
         "packagerConfig.icon",
     )
 
@@ -60,6 +62,42 @@ def update_forge_config() -> None:
     )
 
     FORGE_CONFIG_PATH.write_text(content, encoding="utf-8")
+    return packager_icon_path
+
+
+def build_packager_icon() -> str:
+    """
+    Return packaging icon path with platform validation.
+    On macOS, Electron packaging icon requires .icns.
+    """
+    source = ROOT / ICON_PATH
+    if not source.exists():
+        raise FileNotFoundError(f"Missing icon file: {source}")
+
+    if sys.platform != "darwin":
+        return ICON_PATH
+
+    if source.suffix.lower() == ".icns":
+        return ICON_PATH
+
+    if Image is None:
+        raise RuntimeError(
+            "ICON_PATH is not .icns and Pillow is not installed.\n"
+            "Run: python3 -m pip install Pillow\n"
+            "Or set ICON_PATH to an existing .icns file."
+        )
+
+    GENERATED_ICNS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with Image.open(source) as img:
+        # ICNS generation works best with a square image.
+        side = min(img.size)
+        left = (img.width - side) // 2
+        top = (img.height - side) // 2
+        cropped = img.crop((left, top, left + side, top + side)).convert("RGBA")
+        # Pillow will build multiple icon sizes into one .icns.
+        cropped.save(str(GENERATED_ICNS_PATH), format="ICNS", sizes=[(1024, 1024)])
+
+    return GENERATED_ICNS_PATH.relative_to(ROOT).as_posix()
 
 
 def update_main_ts() -> None:
@@ -91,13 +129,13 @@ def main() -> None:
         raise FileNotFoundError(f"Missing file: {MAIN_TS_PATH}")
 
     update_package_json()
-    update_forge_config()
+    packager_icon_path = update_forge_config()
     update_main_ts()
 
     print("Updated app metadata successfully:")
     print(f"- productName (package.json): {APP_NAME}")
     print(f"- packagerConfig.name (forge.config.ts): {APP_NAME}")
-    print(f"- packagerConfig.icon (forge.config.ts): {ICON_PATH}")
+    print(f"- packagerConfig.icon (forge.config.ts): {packager_icon_path}")
     print(f"- APP_DISPLAY_NAME (src/main.ts): {APP_NAME}")
     print(f"- APP_ICON_PATH (src/main.ts): {ICON_PATH}")
 

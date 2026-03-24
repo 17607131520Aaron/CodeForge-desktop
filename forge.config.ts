@@ -13,7 +13,7 @@ const config: ForgeConfig = {
     // 应用图标配置
     // macOS 使用 .icns 格式，Windows 使用 .ico 格式，Linux 使用 .png 格式
     // 图标文件应放在项目根目录的 assets 文件夹中
-    icon: "src/assets/app_icon.jpg", // 不带扩展名，Electron 会自动查找对应平台的图标文件
+    icon: "src/assets/app_icon.generated.icns", // 不带扩展名，Electron 会自动查找对应平台的图标文件
     // 应用名称（会覆盖 package.json 中的 productName）
     name: "AI助理调试工具",
   },
