@@ -265,46 +265,8 @@ export class LogWebSocketServer {
   }
 
   private handleJsLogMessage(sender: WebSocket, parsedData: unknown, messageStr: string): void {
-    const jsLogPayload = parsedData as {
-      context?: unknown;
-      level?: unknown;
-      message?: unknown;
-      timestamp?: unknown;
-      type: "js-log";
-    };
-    const level = this.normalizeJsLogLevel(jsLogPayload.level);
-    const messageText = this.normalizeJsLogMessageText(jsLogPayload.message);
-    const signature = `${level}:${messageText}`;
-
-    if (this.shouldSampleJsLog(level)) {
-      this.droppedJsLogCount += 1;
-      if (this.droppedJsLogCount === 1 || this.droppedJsLogCount % 100 === 0) {
-        this.enqueueSampledJsLogSummary();
-      }
-      return;
-    }
-
-    const repeatedJsLogState = this.repeatedJsLogState;
-    if (
-      repeatedJsLogState &&
-      repeatedJsLogState.signature === signature &&
-      repeatedJsLogState.sender === sender
-    ) {
-      repeatedJsLogState.count += 1;
-      this.scheduleRepeatedJsLogSummary();
-      return;
-    }
-
-    this.flushRepeatedJsLogSummary();
-    this.repeatedJsLogState = {
-      baseMessage: messageText,
-      count: 0,
-      level,
-      sender,
-      signature,
-      timer: null,
-    };
-
+    // Always forward every js-log message, even if repeated.
+    // (No sampling, no "repeat summary" aggregation.)
     this.enqueueBroadcast(messageStr, sender, true);
   }
 

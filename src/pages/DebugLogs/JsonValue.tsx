@@ -1,7 +1,6 @@
 // 递归渲染 JSON 值的组件（类似 Chrome DevTools）
-import React, { useState } from "react";
-
-import { DownOutlined, RightOutlined } from "@ant-design/icons";
+// 为了满足“永远显示全”，数组/对象不再折叠，始终以展开态渲染。
+import React, { useEffect } from "react";
 
 const JsonValue: React.FC<{
   defaultExpandedDepth?: number;
@@ -9,15 +8,13 @@ const JsonValue: React.FC<{
   onExpandedChange?: () => void;
   parentKey?: string;
   value: unknown;
-}> = ({ defaultExpandedDepth = 2, level = 0, onExpandedChange, parentKey: _parentKey, value }) => {
-  // 根节点默认折叠，子节点展开 2 层，整体效果更接近 Chrome 控制台
-  const [isExpanded, setIsExpanded] = useState(level < defaultExpandedDepth);
-
+}> = ({ level = 0, onExpandedChange, parentKey: _parentKey, value }) => {
   const indent = level * 16;
 
-  React.useEffect(() => {
+  // 给虚拟列表测量留一个机会：value 变化/重渲染后通知一次高度更新。
+  useEffect(() => {
     onExpandedChange?.();
-  }, [isExpanded, onExpandedChange]);
+  }, [onExpandedChange, value]);
 
   // 字符串
   if (typeof value === "string") {
@@ -55,36 +52,20 @@ const JsonValue: React.FC<{
       );
     }
 
-    const preview = value.length === 1 ? "1 item" : `${value.length} items`;
-
     return (
       <span>
-        <span
-          className="json-toggle"
-          style={{ cursor: "pointer", userSelect: "none", marginRight: 4 }}
-          onClick={() => setIsExpanded(!isExpanded)}
-        >
-          {isExpanded ? <DownOutlined style={{ fontSize: 10 }} /> : <RightOutlined style={{ fontSize: 10 }} />}
-        </span>
         <span className="json-bracket">[</span>
-        {isExpanded ? (
-          <>
-            <div style={{ marginLeft: indent + 16 }}>
-              {value.map((item, index) => (
-                <div key={index} className="json-line">
-                  <JsonValue defaultExpandedDepth={defaultExpandedDepth} level={level + 1} value={item} />
-                  {index < value.length - 1 && <span className="json-comma">,</span>}
-                </div>
-              ))}
+        <div style={{ marginLeft: indent + 16 }}>
+          {value.map((item, index) => (
+            <div key={index} className="json-line">
+              <JsonValue level={level + 1} value={item} onExpandedChange={onExpandedChange} />
+              {index < value.length - 1 && <span className="json-comma">,</span>}
             </div>
-            <div style={{ marginLeft: indent }}>
-              <span className="json-bracket">]</span>
-            </div>
-          </>
-        ) : (
-          <span className="json-preview">{preview}</span>
-        )}
-        {!isExpanded && <span className="json-bracket">]</span>}
+          ))}
+        </div>
+        <div style={{ marginLeft: indent }}>
+          <span className="json-bracket">]</span>
+        </div>
       </span>
     );
   }
@@ -101,44 +82,22 @@ const JsonValue: React.FC<{
       );
     }
 
-    const preview = entries.length === 1 ? "1 property" : `${entries.length} properties`;
-
     return (
       <span>
-        <span
-          className="json-toggle"
-          style={{ cursor: "pointer", userSelect: "none", marginRight: 4 }}
-          onClick={() => setIsExpanded(!isExpanded)}
-        >
-          {isExpanded ? <DownOutlined style={{ fontSize: 10 }} /> : <RightOutlined style={{ fontSize: 10 }} />}
-        </span>
         <span className="json-brace">{`{`}</span>
-        {isExpanded ? (
-          <>
-            <div style={{ marginLeft: indent + 16 }}>
-              {entries.map(([key, val], index) => (
-                <div key={key} className="json-line">
-                  <span className="json-key">"{key}"</span>
-                  <span className="json-colon">: </span>
-                  <JsonValue
-                    defaultExpandedDepth={defaultExpandedDepth}
-                    level={level + 1}
-                    onExpandedChange={onExpandedChange}
-                    parentKey={key}
-                    value={val}
-                  />
-                  {index < entries.length - 1 && <span className="json-comma">,</span>}
-                </div>
-              ))}
+        <div style={{ marginLeft: indent + 16 }}>
+          {entries.map(([key, val], index) => (
+            <div key={key} className="json-line">
+              <span className="json-key">"{key}"</span>
+              <span className="json-colon">: </span>
+              <JsonValue level={level + 1} onExpandedChange={onExpandedChange} parentKey={key} value={val} />
+              {index < entries.length - 1 && <span className="json-comma">,</span>}
             </div>
-            <div style={{ marginLeft: indent }}>
-              <span className="json-brace">{`}`}</span>
-            </div>
-          </>
-        ) : (
-          <span className="json-preview">{preview}</span>
-        )}
-        {!isExpanded && <span className="json-brace">{`}`}</span>}
+          ))}
+        </div>
+        <div style={{ marginLeft: indent }}>
+          <span className="json-brace">{`}`}</span>
+        </div>
       </span>
     );
   }
