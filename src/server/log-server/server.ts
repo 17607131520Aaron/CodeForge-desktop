@@ -29,10 +29,6 @@ const disableTruncation = true;
 // If payloads are truncated here, the frontend cannot recover original content.
 // Increase defaults to reduce user-visible truncation during network monitoring.
 const MAX_INCOMING_MESSAGE_BYTES = envNumber("LOG_SERVER_MAX_INCOMING_MESSAGE_BYTES", 1024 * 1024); // 1MB
-const JS_LOG_REPEAT_SUMMARY_DELAY_MS = 250;
-const JS_LOG_QUEUE_HIGH_WATERMARK = 0.5;
-const JS_LOG_QUEUE_CRITICAL_WATERMARK = 0.75;
-const JS_LOG_QUEUE_EMERGENCY_WATERMARK = 0.9;
 const MAX_STRING_FIELD_LENGTH = envNumber("LOG_SERVER_MAX_STRING_FIELD_LENGTH", 64 * 1024); // 64KB
 const MAX_ARRAY_ITEMS = envNumber("LOG_SERVER_MAX_ARRAY_ITEMS", 250);
 const MAX_OBJECT_KEYS = envNumber("LOG_SERVER_MAX_OBJECT_KEYS", 250);
@@ -42,15 +38,6 @@ interface IQueuedBroadcast {
   excludeSender: boolean;
   message: string;
   sender: WebSocket | null;
-}
-
-interface IRepeatLogState {
-  baseMessage: string;
-  count: number;
-  level: string;
-  sender: WebSocket | null;
-  signature: string;
-  timer: NodeJS.Timeout | null;
 }
 
 /**
@@ -75,9 +62,6 @@ export class LogWebSocketServer {
   private path: string = "/logs";
   private isRunning: boolean = false;
   private droppedBroadcastCount = 0;
-  private droppedJsLogCount = 0;
-  private jsLogSampleCounter = 0;
-  private repeatedJsLogState: IRepeatLogState | null = null;
 
   /**
    * 获取当前连接数
@@ -168,8 +152,6 @@ export class LogWebSocketServer {
       this.flushHandle = null;
     }
 
-    this.flushRepeatedJsLogSummary();
-
     if (this.wss) {
       this.wss.close(() => {
         console.log("[Log Server] WebSocket 服务器已关闭");
@@ -241,19 +223,15 @@ export class LogWebSocketServer {
       if (parsedData.type === "js-log") {
         this.handleJsLogMessage(sender, parsedData, messageStr);
       } else if (parsedData.type === "network-request") {
-        this.flushRepeatedJsLogSummary();
         // 广播给所有客户端（包括发送者，因为前端需要显示）
         this.enqueueBroadcast(messageStr);
       } else if (parsedData.type === "network-response") {
-        this.flushRepeatedJsLogSummary();
         // 广播给所有客户端
         this.enqueueBroadcast(messageStr);
       } else if (parsedData.type === "network-error") {
-        this.flushRepeatedJsLogSummary();
         // 广播给所有客户端
         this.enqueueBroadcast(messageStr);
       } else {
-        this.flushRepeatedJsLogSummary();
         // 其他类型的消息，也广播给所有客户端
 
         this.enqueueBroadcast(messageStr);
@@ -264,7 +242,7 @@ export class LogWebSocketServer {
     }
   }
 
-  private handleJsLogMessage(sender: WebSocket, parsedData: unknown, messageStr: string): void {
+  private handleJsLogMessage(sender: WebSocket, _parsedData: unknown, messageStr: string): void {
     // Always forward every js-log message, even if repeated.
     // (No sampling, no "repeat summary" aggregation.)
     this.enqueueBroadcast(messageStr, sender, true);
@@ -318,109 +296,6 @@ export class LogWebSocketServer {
 
     this.pendingBroadcasts.push({ excludeSender, message, sender });
     this.scheduleFlush();
-  }
-
-  private shouldSampleJsLog(level: string): boolean {
-    if (level === "warn" || level === "error") {
-      return false;
-    }
-
-    const queueUsage = this.pendingBroadcasts.length / MAX_PENDING_BROADCASTS;
-    let sampleRate = 1;
-
-    if (queueUsage >= JS_LOG_QUEUE_EMERGENCY_WATERMARK) {
-      sampleRate = 10;
-    } else if (queueUsage >= JS_LOG_QUEUE_CRITICAL_WATERMARK) {
-      sampleRate = 5;
-    } else if (queueUsage >= JS_LOG_QUEUE_HIGH_WATERMARK) {
-      sampleRate = 2;
-    }
-
-    if (sampleRate === 1) {
-      return false;
-    }
-
-    this.jsLogSampleCounter = (this.jsLogSampleCounter + 1) % sampleRate;
-    return this.jsLogSampleCounter !== 0;
-  }
-
-  private enqueueSampledJsLogSummary(): void {
-    const droppedCount = this.droppedJsLogCount;
-    if (droppedCount <= 0) {
-      return;
-    }
-
-    this.droppedJsLogCount = 0;
-    this.enqueueBroadcast(
-      JSON.stringify({
-        type: "js-log",
-        level: "warn",
-        message: `[Log Server] 日志洪峰中已采样丢弃 ${droppedCount} 条低优先级日志`,
-        timestamp: new Date().toISOString(),
-      }),
-    );
-  }
-
-  private scheduleRepeatedJsLogSummary(): void {
-    if (!this.repeatedJsLogState) {
-      return;
-    }
-
-    if (this.repeatedJsLogState.timer) {
-      clearTimeout(this.repeatedJsLogState.timer);
-    }
-
-    this.repeatedJsLogState.timer = setTimeout(() => {
-      this.flushRepeatedJsLogSummary();
-    }, JS_LOG_REPEAT_SUMMARY_DELAY_MS);
-  }
-
-  private flushRepeatedJsLogSummary(): void {
-    if (!this.repeatedJsLogState) {
-      return;
-    }
-
-    if (this.repeatedJsLogState.timer) {
-      clearTimeout(this.repeatedJsLogState.timer);
-      this.repeatedJsLogState.timer = null;
-    }
-
-    if (this.repeatedJsLogState.count > 0) {
-      this.enqueueBroadcast(
-        JSON.stringify({
-          type: "js-log",
-          level: this.repeatedJsLogState.level,
-          message: `${this.repeatedJsLogState.baseMessage}\n[Log Server] 上一条日志重复 ${this.repeatedJsLogState.count} 次`,
-          timestamp: new Date().toISOString(),
-        }),
-        this.repeatedJsLogState.sender,
-        true,
-      );
-    }
-
-    this.repeatedJsLogState = null;
-  }
-
-  private normalizeJsLogLevel(level: unknown): string {
-    const normalizedLevel = String(level || "log").toLowerCase();
-
-    if (["log", "info", "warn", "error", "debug"].includes(normalizedLevel)) {
-      return normalizedLevel;
-    }
-
-    return "log";
-  }
-
-  private normalizeJsLogMessageText(message: unknown): string {
-    if (typeof message === "string") {
-      return message;
-    }
-
-    try {
-      return JSON.stringify(message);
-    } catch {
-      return String(message);
-    }
   }
 
   /**
@@ -561,17 +436,17 @@ export class LogWebSocketServer {
         const data = (typedPayload as { data?: Record<string, unknown> }).data || {};
         return {
           data: {
-            baseURL: this.sanitizeString(data.baseURL),
-            body: this.sanitizeValue(data.body, 1),
-            headers: this.sanitizeValue(data.headers, 1),
-            id: this.sanitizeString(data.id),
-            method: this.sanitizeString(data.method),
-            originalUrl: this.sanitizeString(data.originalUrl),
-            params: this.sanitizeValue(data.params, 1),
-            startTime: this.sanitizeValue(data.startTime),
+            baseURL: this.sanitizeString(data["baseURL"]),
+            body: this.sanitizeValue(data["body"], 1),
+            headers: this.sanitizeValue(data["headers"], 1),
+            id: this.sanitizeString(data["id"]),
+            method: this.sanitizeString(data["method"]),
+            originalUrl: this.sanitizeString(data["originalUrl"]),
+            params: this.sanitizeValue(data["params"], 1),
+            startTime: this.sanitizeValue(data["startTime"]),
             truncated: true,
-            type: this.sanitizeString(data.type),
-            url: this.sanitizeString(data.url),
+            type: this.sanitizeString(data["type"]),
+            url: this.sanitizeString(data["url"]),
           },
           type: "network-request",
         };
@@ -580,13 +455,13 @@ export class LogWebSocketServer {
         const data = (typedPayload as { data?: Record<string, unknown> }).data || {};
         return {
           data: {
-            data: this.sanitizeValue(data.data, 1),
-            endTime: this.sanitizeValue(data.endTime),
-            headers: this.sanitizeValue(data.headers, 1),
-            id: this.sanitizeString(data.id),
-            size: this.sanitizeValue(data.size),
-            status: this.sanitizeValue(data.status),
-            statusText: this.sanitizeString(data.statusText),
+            data: this.sanitizeValue(data["data"], 1),
+            endTime: this.sanitizeValue(data["endTime"]),
+            headers: this.sanitizeValue(data["headers"], 1),
+            id: this.sanitizeString(data["id"]),
+            size: this.sanitizeValue(data["size"]),
+            status: this.sanitizeValue(data["status"]),
+            statusText: this.sanitizeString(data["statusText"]),
             truncated: true,
           },
           type: "network-response",
@@ -596,9 +471,9 @@ export class LogWebSocketServer {
         const data = (typedPayload as { data?: Record<string, unknown> }).data || {};
         return {
           data: {
-            endTime: this.sanitizeValue(data.endTime),
-            error: this.sanitizeString(data.error),
-            id: this.sanitizeString(data.id),
+            endTime: this.sanitizeValue(data["endTime"]),
+            error: this.sanitizeString(data["error"]),
+            id: this.sanitizeString(data["id"]),
             truncated: true,
           },
           type: "network-error",
@@ -634,7 +509,7 @@ export class LogWebSocketServer {
     }
 
     if (Object.keys(value).length > MAX_OBJECT_KEYS) {
-      sanitizedObject.__truncatedKeys = true;
+      sanitizedObject["__truncatedKeys"] = true;
     }
 
     return sanitizedObject;

@@ -1,6 +1,7 @@
 // 递归渲染 JSON 值的组件（类似 Chrome DevTools）
-// 为了满足“永远显示全”，数组/对象不再折叠，始终以展开态渲染。
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
+
+import { DownOutlined, RightOutlined } from "@ant-design/icons";
 
 const JsonValue: React.FC<{
   defaultExpandedDepth?: number;
@@ -8,25 +9,26 @@ const JsonValue: React.FC<{
   onExpandedChange?: () => void;
   parentKey?: string;
   value: unknown;
-}> = ({ level = 0, onExpandedChange, parentKey: _parentKey, value }) => {
+}> = ({ defaultExpandedDepth = 2, level = 0, onExpandedChange, parentKey: _parentKey, value }) => {
+  const [isExpanded, setIsExpanded] = useState(level < defaultExpandedDepth);
+
   const indent = level * 16;
 
-  // 给虚拟列表测量留一个机会：value 变化/重渲染后通知一次高度更新。
   useEffect(() => {
     onExpandedChange?.();
-  }, [onExpandedChange, value]);
+  }, [isExpanded, onExpandedChange]);
 
-  // 字符串
+  // string
   if (typeof value === "string") {
     return <span className="json-string">"{value}"</span>;
   }
 
-  // 数字
+  // number
   if (typeof value === "number") {
     return <span className="json-number">{value}</span>;
   }
 
-  // 布尔值
+  // boolean
   if (typeof value === "boolean") {
     return <span className="json-boolean">{value ? "true" : "false"}</span>;
   }
@@ -41,7 +43,7 @@ const JsonValue: React.FC<{
     return <span className="json-undefined">undefined</span>;
   }
 
-  // 数组
+  // array
   if (Array.isArray(value)) {
     if (value.length === 0) {
       return (
@@ -52,27 +54,48 @@ const JsonValue: React.FC<{
       );
     }
 
+    const preview = value.length === 1 ? "1 item" : `${value.length} items`;
+
     return (
       <span>
+        <span
+          className="json-toggle"
+          style={{ cursor: "pointer", userSelect: "none", marginRight: 4 }}
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          {isExpanded ? <DownOutlined style={{ fontSize: 10 }} /> : <RightOutlined style={{ fontSize: 10 }} />}
+        </span>
         <span className="json-bracket">[</span>
-        <div style={{ marginLeft: indent + 16 }}>
-          {value.map((item, index) => (
-            <div key={index} className="json-line">
-              <JsonValue level={level + 1} value={item} onExpandedChange={onExpandedChange} />
-              {index < value.length - 1 && <span className="json-comma">,</span>}
+        {isExpanded ? (
+          <>
+            <div style={{ marginLeft: indent + 16 }}>
+              {value.map((item, index) => (
+                <div key={index} className="json-line">
+                  <JsonValue
+                    defaultExpandedDepth={defaultExpandedDepth}
+                    level={level + 1}
+                    onExpandedChange={onExpandedChange}
+                    value={item}
+                  />
+                  {index < value.length - 1 && <span className="json-comma">,</span>}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-        <div style={{ marginLeft: indent }}>
-          <span className="json-bracket">]</span>
-        </div>
+            <div style={{ marginLeft: indent }}>
+              <span className="json-bracket">]</span>
+            </div>
+          </>
+        ) : (
+          <span className="json-preview">{preview}</span>
+        )}
+        {!isExpanded && <span className="json-bracket">]</span>}
       </span>
     );
   }
 
-  // 对象
+  // object
   if (typeof value === "object") {
-    const entries = Object.entries(value);
+    const entries = Object.entries(value as Record<string, unknown>);
     if (entries.length === 0) {
       return (
         <span>
@@ -82,22 +105,44 @@ const JsonValue: React.FC<{
       );
     }
 
+    const preview = entries.length === 1 ? "1 property" : `${entries.length} properties`;
+
     return (
       <span>
+        <span
+          className="json-toggle"
+          style={{ cursor: "pointer", userSelect: "none", marginRight: 4 }}
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          {isExpanded ? <DownOutlined style={{ fontSize: 10 }} /> : <RightOutlined style={{ fontSize: 10 }} />}
+        </span>
         <span className="json-brace">{`{`}</span>
-        <div style={{ marginLeft: indent + 16 }}>
-          {entries.map(([key, val], index) => (
-            <div key={key} className="json-line">
-              <span className="json-key">"{key}"</span>
-              <span className="json-colon">: </span>
-              <JsonValue level={level + 1} onExpandedChange={onExpandedChange} parentKey={key} value={val} />
-              {index < entries.length - 1 && <span className="json-comma">,</span>}
+        {isExpanded ? (
+          <>
+            <div style={{ marginLeft: indent + 16 }}>
+              {entries.map(([key, val], index) => (
+                <div key={key} className="json-line">
+                  <span className="json-key">"{key}"</span>
+                  <span className="json-colon">: </span>
+                  <JsonValue
+                    defaultExpandedDepth={defaultExpandedDepth}
+                    level={level + 1}
+                    onExpandedChange={onExpandedChange}
+                    parentKey={key}
+                    value={val}
+                  />
+                  {index < entries.length - 1 && <span className="json-comma">,</span>}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-        <div style={{ marginLeft: indent }}>
-          <span className="json-brace">{`}`}</span>
-        </div>
+            <div style={{ marginLeft: indent }}>
+              <span className="json-brace">{`}`}</span>
+            </div>
+          </>
+        ) : (
+          <span className="json-preview">{preview}</span>
+        )}
+        {!isExpanded && <span className="json-brace">{`}`}</span>}
       </span>
     );
   }

@@ -71,7 +71,9 @@
   &-item {
     padding: 4px 0;
     border-bottom: 1px solid rgb(255 255 255 / 0.05);
-    word-break: break-word;
+    // Prevent wrapping so long tokens can be inspected via horizontal scroll.
+    word-break: normal;
+    overflow-wrap: normal;
     transition: background-color 0.2s;
     display: flex;
     align-items: flex-start;
@@ -119,6 +121,7 @@
     flex: 1;
     color: #d4d4d4;
     min-width: 0;
+    overflow-x: auto;
   }
 
   &-message-text {
@@ -211,15 +214,29 @@
 
   // Chrome DevTools 风格的 JSON 查看器
 .chrome-like-json {
-  display: inline-block;
+  display: block;
   font-size: 12px;
   font-family: Consolas, Monaco, "Courier New", monospace;
   line-height: 1.5;
   color: #d4d4d4;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: normal;
+
+  // Legacy: if some viewer renders a <pre> container.
+  .json-viewer-pro-pre {
+    margin: 0;
+    padding: 0;
+    white-space: pre;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
 
   .json-line {
-    min-height: 18px;
-    line-height: 18px;
+    min-height: 0;
+    line-height: 1.35;
+    white-space: nowrap;
   }
 
   .json-toggle {
