@@ -11,15 +11,32 @@ import { WebSocketServer, WebSocket, type RawData } from "ws";
 const MAX_PENDING_BROADCASTS = 2000;
 const MAX_FLUSH_BATCH_SIZE = 200;
 const MAX_SOCKET_BUFFERED_BYTES = 2 * 1024 * 1024;
-const MAX_INCOMING_MESSAGE_BYTES = 256 * 1024;
+const envNumber = (key: string, fallback: number) => {
+  const raw = process.env[key];
+  if (!raw) {
+    return fallback;
+  }
+
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+// Disable the "sanitizeLargePayload" truncation behavior.
+// WARNING: Extremely large messages can impact memory / UI responsiveness.
+// Since you requested "no truncation", we force-disable sanitization truncation.
+const disableTruncation = true;
+
+// If payloads are truncated here, the frontend cannot recover original content.
+// Increase defaults to reduce user-visible truncation during network monitoring.
+const MAX_INCOMING_MESSAGE_BYTES = envNumber("LOG_SERVER_MAX_INCOMING_MESSAGE_BYTES", 1024 * 1024); // 1MB
 const JS_LOG_REPEAT_SUMMARY_DELAY_MS = 250;
 const JS_LOG_QUEUE_HIGH_WATERMARK = 0.5;
 const JS_LOG_QUEUE_CRITICAL_WATERMARK = 0.75;
 const JS_LOG_QUEUE_EMERGENCY_WATERMARK = 0.9;
-const MAX_STRING_FIELD_LENGTH = 8 * 1024;
-const MAX_ARRAY_ITEMS = 100;
-const MAX_OBJECT_KEYS = 100;
-const MAX_SANITIZE_DEPTH = 6;
+const MAX_STRING_FIELD_LENGTH = envNumber("LOG_SERVER_MAX_STRING_FIELD_LENGTH", 64 * 1024); // 64KB
+const MAX_ARRAY_ITEMS = envNumber("LOG_SERVER_MAX_ARRAY_ITEMS", 250);
+const MAX_OBJECT_KEYS = envNumber("LOG_SERVER_MAX_OBJECT_KEYS", 250);
+const MAX_SANITIZE_DEPTH = envNumber("LOG_SERVER_MAX_SANITIZE_DEPTH", 10);
 
 interface IQueuedBroadcast {
   excludeSender: boolean;
@@ -91,6 +108,9 @@ export class LogWebSocketServer {
     this.path = path;
 
     try {
+      console.log(
+        `[Log Server] truncation=${disableTruncation ? "disabled" : "enabled"}, maxIncomingBytes=${MAX_INCOMING_MESSAGE_BYTES}, maxStringBytes=${MAX_STRING_FIELD_LENGTH}`,
+      );
       // 创建 HTTP 服务器用于 WebSocket 升级
       this.httpServer = createServer();
 
@@ -527,6 +547,17 @@ export class LogWebSocketServer {
 
   private normalizeMessageForForwarding(parsedData: unknown, rawMessage: string): string {
     const incomingMessageSize = Buffer.byteLength(rawMessage, "utf-8");
+    if (disableTruncation) {
+      // Keep the original payload to avoid any truncation.
+      // Note: this may increase memory usage and make the UI heavy for huge responses.
+      if (rawMessage.includes("[truncated")) {
+        console.warn(
+          `[Log Server] incoming message already contains "[truncated]" marker (upstream truncation suspected). size=${incomingMessageSize} bytes`,
+        );
+      }
+      return rawMessage;
+    }
+
     if (incomingMessageSize <= MAX_INCOMING_MESSAGE_BYTES) {
       return rawMessage;
     }

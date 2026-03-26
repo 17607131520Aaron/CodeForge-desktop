@@ -35,6 +35,12 @@ export interface INetworkRequest {
   error?: string | undefined;
   /** 是否已完成 */
   completed: boolean;
+  /** 请求体是否被服务器截断（内容可能不完整） */
+  requestTruncated?: boolean;
+  /** 响应体是否被服务器截断（内容可能不完整） */
+  responseTruncated?: boolean;
+  /** 错误信息是否被服务器截断（内容可能不完整） */
+  errorTruncated?: boolean;
   /** 基础 URL */
   baseURL?: string | undefined;
   /** 原始 URL（相对路径） */
@@ -59,6 +65,7 @@ export interface INetworkRequestMessage {
     originalUrl?: string;
     params?: unknown;
     body?: unknown;
+    truncated?: boolean;
   };
 }
 
@@ -71,6 +78,7 @@ export interface INetworkResponseMessage {
     data?: unknown;
     endTime: number;
     size?: number;
+    truncated?: boolean;
   };
 }
 
@@ -80,6 +88,7 @@ export interface INetworkErrorMessage {
     id: string;
     error: string;
     endTime: number;
+    truncated?: boolean;
   };
 }
 

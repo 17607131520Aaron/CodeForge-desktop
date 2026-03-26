@@ -251,6 +251,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ request }) => {
             copyLabel="复制请求参数"
             emptyFallback={<Empty description="暂无请求载荷" image={Empty.PRESENTED_IMAGE_SIMPLE} />}
             value={requestPayload}
+            truncated={request.requestTruncated}
           />
         </div>
       ),
@@ -261,9 +262,16 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ request }) => {
       children: (
         <div className="network-tab-scroll-area network-json-panel">
           {request.responseData !== undefined ? (
-            <LazyJsonPanel copyLabel="复制响应数据" value={responsePayload} />
+            <LazyJsonPanel copyLabel="复制响应数据" value={responsePayload} truncated={request.responseTruncated} />
           ) : request.error ? (
-            <pre className="network-code-block">{request.error}</pre>
+            <>
+              {request.errorTruncated && (
+                <Text style={{ color: "#faad14", marginBottom: 8 }}>
+                  注意：服务器已对错误内容做截断，展示可能不完整。
+                </Text>
+              )}
+              <pre className="network-code-block">{request.error}</pre>
+            </>
           ) : (
             <Empty description="暂无响应内容" image={Empty.PRESENTED_IMAGE_SIMPLE} />
           )}
