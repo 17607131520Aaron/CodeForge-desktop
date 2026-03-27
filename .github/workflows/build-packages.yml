@@ -158,6 +158,10 @@ jobs:
             TAG_NAME="$GITHUB_REF_NAME"
           elif [ -n "${INPUT_RELEASE_TAG:-}" ]; then
             TAG_NAME="$INPUT_RELEASE_TAG"
+            # Allow both "1.0.3" and "v1.0.3" from workflow_dispatch input.
+            if [[ ! "$TAG_NAME" =~ ^v ]]; then
+              TAG_NAME="v$TAG_NAME"
+            fi
           else
             VERSION="$(node -p "require('./app.json').appVersion")"
             TAG_NAME="v$VERSION"
