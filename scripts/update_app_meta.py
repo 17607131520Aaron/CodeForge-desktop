@@ -20,6 +20,25 @@ GENERATED_ICNS_PATH = ROOT / "src" / "assets" / "app_icon.generated.icns"
 sys.dont_write_bytecode = True
 
 
+def setup_stdout() -> None:
+    """
+    Make console output resilient on runners with legacy encodings (e.g. cp1252).
+    """
+    try:
+        sys.stdout.reconfigure(errors="replace")
+    except Exception:
+        # Best effort only; script should still run if reconfigure is unavailable.
+        pass
+
+
+def safe_print(text: str) -> None:
+    try:
+        print(text)
+    except UnicodeEncodeError:
+        encoded = text.encode(sys.stdout.encoding or "utf-8", errors="replace")
+        print(encoded.decode(sys.stdout.encoding or "utf-8", errors="replace"))
+
+
 def load_app_config() -> dict[str, str]:
     if not APP_CONFIG_PATH.exists():
         raise FileNotFoundError(f"Missing file: {APP_CONFIG_PATH}")
@@ -179,6 +198,8 @@ def update_main_ts(app_name: str, icon_path: str, app_version: str, update_repo:
 
 
 def main() -> None:
+    setup_stdout()
+
     if not PACKAGE_JSON_PATH.exists():
         raise FileNotFoundError(f"Missing file: {PACKAGE_JSON_PATH}")
     if not FORGE_CONFIG_PATH.exists():
@@ -196,15 +217,15 @@ def main() -> None:
     )
     update_main_ts(config["app_name"], config["icon_path"], app_version, config["update_repo"])
 
-    print("Updated app metadata successfully:")
-    print(f"- productName (package.json): {config['app_name']}")
-    print(f"- version (package.json): {app_version}")
-    print(f"- packagerConfig.name (forge.config.ts): {config['app_name']}")
-    print(f"- packagerConfig.icon (forge.config.ts): {packager_icon_path}")
-    print(f"- APP_DISPLAY_NAME (src/main.ts): {config['app_name']}")
-    print(f"- APP_ICON_PATH (src/main.ts): {config['icon_path']}")
-    print(f"- APP_VERSION (src/main.ts): {app_version}")
-    print(f"- UPDATE_REPO (src/main.ts): {config['update_repo']}")
+    safe_print("Updated app metadata successfully:")
+    safe_print(f"- productName (package.json): {config['app_name']}")
+    safe_print(f"- version (package.json): {app_version}")
+    safe_print(f"- packagerConfig.name (forge.config.ts): {config['app_name']}")
+    safe_print(f"- packagerConfig.icon (forge.config.ts): {packager_icon_path}")
+    safe_print(f"- APP_DISPLAY_NAME (src/main.ts): {config['app_name']}")
+    safe_print(f"- APP_ICON_PATH (src/main.ts): {config['icon_path']}")
+    safe_print(f"- APP_VERSION (src/main.ts): {app_version}")
+    safe_print(f"- UPDATE_REPO (src/main.ts): {config['update_repo']}")
 
 
 if __name__ == "__main__":
