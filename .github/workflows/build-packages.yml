@@ -147,12 +147,31 @@ jobs:
           gh --version
           set -euo pipefail
 
-          GH_TOKEN="${RELEASE_TOKEN:-${GITHUB_TOKEN:-}}"
-          export GH_TOKEN
-          if [ -z "${GH_TOKEN:-}" ]; then
+          if [ -z "${RELEASE_TOKEN:-}" ] && [ -z "${GITHUB_TOKEN:-}" ]; then
             echo "Missing token. Please provide RELEASE_TOKEN or use default GITHUB_TOKEN."
             exit 1
           fi
+
+          pick_token() {
+            local candidate="$1"
+            if [ -z "$candidate" ]; then
+              return 1
+            fi
+            GH_TOKEN="$candidate" gh api --silent user >/dev/null 2>&1
+          }
+
+          # Prefer RELEASE_TOKEN only when valid, otherwise fallback.
+          if pick_token "${RELEASE_TOKEN:-}"; then
+            GH_TOKEN="${RELEASE_TOKEN}"
+            echo "Using RELEASE_TOKEN."
+          elif pick_token "${GITHUB_TOKEN:-}"; then
+            GH_TOKEN="${GITHUB_TOKEN}"
+            echo "RELEASE_TOKEN invalid/unavailable; fallback to GITHUB_TOKEN."
+          else
+            echo "No valid GitHub token available."
+            exit 1
+          fi
+          export GH_TOKEN
 
           if [ "${GITHUB_REF_TYPE:-}" = "tag" ] && [ -n "${GITHUB_REF_NAME:-}" ]; then
             TAG_NAME="$GITHUB_REF_NAME"
@@ -185,10 +204,17 @@ jobs:
             if ! gh api --silent --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
               -f ref="refs/tags/$TAG_NAME" \
               -f sha="$GITHUB_SHA" >/dev/null; then
-              echo "Failed to create tag ref: $TAG_NAME"
-              echo "Repository rules may block creating refs. Please verify ruleset and token permissions."
-              echo "If needed, allow this actor in ruleset bypass: $TOKEN_LOGIN"
-              exit 1
+              # Handle race condition: tag may have been created concurrently.
+              if gh api --silent --method GET "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG_NAME" >/dev/null 2>&1; then
+                echo "Tag $TAG_NAME already exists now; continuing."
+              else
+                echo "Failed to create tag ref: $TAG_NAME"
+                echo "Likely blocked by tag protection/ruleset (HTTP 422)."
+                echo "Please create and push tag manually, then rerun:"
+                echo "  git tag $TAG_NAME && git push origin $TAG_NAME"
+                echo "Current token actor: $TOKEN_LOGIN"
+                exit 1
+              fi
             fi
           fi
 
