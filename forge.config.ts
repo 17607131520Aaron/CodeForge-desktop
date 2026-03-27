@@ -8,6 +8,7 @@ import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
 import { execFileSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 const config: ForgeConfig = {
@@ -24,9 +25,14 @@ const config: ForgeConfig = {
   hooks: {
     postMake: async (_forgeConfig, makeResults) => {
       const helperScriptPath = path.resolve(process.cwd(), "scripts/fix_macos_quarantine.command");
+      const hasHelperScript = existsSync(helperScriptPath);
+
+      if (!hasHelperScript) {
+        console.warn(`[forge postMake] Skipping helper script append: file not found at ${helperScriptPath}`);
+      }
 
       for (const result of makeResults) {
-        if (result.platform !== "darwin") {
+        if (result.platform !== "darwin" || !hasHelperScript) {
           continue;
         }
 

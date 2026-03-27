@@ -15,7 +15,8 @@
     "make:desktop:all": "pnpm make:mac:arm64 && pnpm make:mac:x64 && pnpm make:win:x64",
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx .",
-    "app:meta": "python3 -B scripts/update_app_meta.py"
+    "app:meta": "python3 -B scripts/update_app_meta.py",
+    "release:mac": "pnpm app:meta && CSC_IDENTITY_AUTO_DISCOVERY=false pnpm make:mac:arm64 && CSC_IDENTITY_AUTO_DISCOVERY=false pnpm make:mac:x64"
   },
   "repository": {
     "type": "git",
