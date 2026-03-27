@@ -3,6 +3,7 @@
   "productName": "AI助理调试工具",
   "version": "1.0.1",
   "description": "My Electron application description",
+  "author": "17607131520Aaron",
   "main": ".vite/build/main.js",
   "private": true,
   "scripts": {
