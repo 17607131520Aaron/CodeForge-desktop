@@ -98,6 +98,3 @@ __pycache__/
 
 # Generated release notes artifact
 release-notes.md
-
-# # Local app config (contains secrets like githubToken)
-# app.json
