@@ -36,8 +36,16 @@ jobs:
         with:
           version: 10
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
+
+      - name: Install Python dependencies
+        run: python -m pip install --upgrade pip Pillow
 
       - name: Sync app metadata
         run: pnpm app:meta
@@ -78,8 +86,16 @@ jobs:
         with:
           version: 10
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
+
+      - name: Install Python dependencies
+        run: python -m pip install --upgrade pip
 
       - name: Sync app metadata
         run: pnpm app:meta
