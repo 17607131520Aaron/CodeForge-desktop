@@ -52,6 +52,7 @@ export const useNetworkMonitorStore = create<NetworkMonitorState>()(
               startTime: message.data.startTime,
               type: message.data.type,
               url: message.data.url,
+              requestTruncated: message.data.truncated,
             };
 
             const withoutCurrent = nextRequests.filter((request) => request.id !== nextRequest.id);
@@ -72,6 +73,7 @@ export const useNetworkMonitorStore = create<NetworkMonitorState>()(
                   responseHeaders: message.data.headers,
                   responseSize: message.data.size,
                   status: message.data.status,
+                  responseTruncated: message.data.truncated,
                 };
               }
 
@@ -81,6 +83,7 @@ export const useNetworkMonitorStore = create<NetworkMonitorState>()(
                 duration: message.data.endTime - request.startTime,
                 endTime: message.data.endTime,
                 error: message.data.error,
+                errorTruncated: message.data.truncated,
               };
             });
           }
@@ -111,6 +114,7 @@ export const useNetworkMonitorStore = create<NetworkMonitorState>()(
                 startTime: message.data.startTime,
                 type: message.data.type,
                 url: message.data.url,
+                requestTruncated: message.data.truncated,
               };
 
               const withoutCurrent = nextRequests.filter((request) => request.id !== nextRequest.id);
@@ -134,9 +138,11 @@ export const useNetworkMonitorStore = create<NetworkMonitorState>()(
                       responseHeaders: message.data.headers,
                       responseSize: message.data.size,
                       status: message.data.status,
+                      responseTruncated: message.data.truncated,
                     }
                   : {
                       error: message.data.error,
+                      errorTruncated: message.data.truncated,
                     }),
               };
             });

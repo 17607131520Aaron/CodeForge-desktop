@@ -196,16 +196,32 @@
 }
 
 .chrome-like-json {
-  display: inline-block;
-  min-width: 100%;
+  display: block;
+  min-width: 0;
   font-size: 12px;
   font-family: Consolas, Monaco, "Courier New", monospace;
-  line-height: 1.5;
+  line-height: 1.35;
   color: #d4d4d4;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: normal;
+
+  // Legacy: if a <pre> based renderer is used.
+  .json-viewer-pro-pre {
+    margin: 0;
+    padding: 0;
+    white-space: pre;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
 
   .json-line {
-    min-height: 18px;
-    line-height: 18px;
+    min-height: 0;
+    line-height: 1.35;
+    white-space: nowrap;
   }
 
   .json-toggle {

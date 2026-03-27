@@ -95,9 +95,9 @@ const CollapsibleJson: React.FC<{ message: string; onContentResize?: () => void 
   const onlySegment = segments.length === 1 ? segments[0] : undefined;
   if (onlySegment && onlySegment.type === "json" && message.trim() === onlySegment.raw.trim()) {
     return (
-      <span className="chrome-like-json">
+      <div className="chrome-like-json">
         <JsonValue level={0} value={onlySegment.parsed} onExpandedChange={onContentResize} />
-      </span>
+      </div>
     );
   }
 
@@ -108,9 +108,9 @@ const CollapsibleJson: React.FC<{ message: string; onContentResize?: () => void 
         seg.type === "text" ? (
           <span key={index}>{seg.text}</span>
         ) : (
-          <span key={index} className="chrome-like-json" style={{ marginLeft: 4 }}>
+          <div key={index} className="chrome-like-json" style={{ marginLeft: 4 }}>
             <JsonValue level={0} value={seg.parsed} onExpandedChange={onContentResize} />
-          </span>
+          </div>
         ),
       )}
     </span>

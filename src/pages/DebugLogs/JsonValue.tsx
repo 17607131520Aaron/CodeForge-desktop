@@ -1,5 +1,5 @@
 // 递归渲染 JSON 值的组件（类似 Chrome DevTools）
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import { DownOutlined, RightOutlined } from "@ant-design/icons";
 
@@ -10,26 +10,25 @@ const JsonValue: React.FC<{
   parentKey?: string;
   value: unknown;
 }> = ({ defaultExpandedDepth = 2, level = 0, onExpandedChange, parentKey: _parentKey, value }) => {
-  // 根节点默认折叠，子节点展开 2 层，整体效果更接近 Chrome 控制台
   const [isExpanded, setIsExpanded] = useState(level < defaultExpandedDepth);
 
   const indent = level * 16;
 
-  React.useEffect(() => {
+  useEffect(() => {
     onExpandedChange?.();
   }, [isExpanded, onExpandedChange]);
 
-  // 字符串
+  // string
   if (typeof value === "string") {
     return <span className="json-string">"{value}"</span>;
   }
 
-  // 数字
+  // number
   if (typeof value === "number") {
     return <span className="json-number">{value}</span>;
   }
 
-  // 布尔值
+  // boolean
   if (typeof value === "boolean") {
     return <span className="json-boolean">{value ? "true" : "false"}</span>;
   }
@@ -44,7 +43,7 @@ const JsonValue: React.FC<{
     return <span className="json-undefined">undefined</span>;
   }
 
-  // 数组
+  // array
   if (Array.isArray(value)) {
     if (value.length === 0) {
       return (
@@ -72,7 +71,12 @@ const JsonValue: React.FC<{
             <div style={{ marginLeft: indent + 16 }}>
               {value.map((item, index) => (
                 <div key={index} className="json-line">
-                  <JsonValue defaultExpandedDepth={defaultExpandedDepth} level={level + 1} value={item} />
+                  <JsonValue
+                    defaultExpandedDepth={defaultExpandedDepth}
+                    level={level + 1}
+                    onExpandedChange={onExpandedChange}
+                    value={item}
+                  />
                   {index < value.length - 1 && <span className="json-comma">,</span>}
                 </div>
               ))}
@@ -89,9 +93,9 @@ const JsonValue: React.FC<{
     );
   }
 
-  // 对象
+  // object
   if (typeof value === "object") {
-    const entries = Object.entries(value);
+    const entries = Object.entries(value as Record<string, unknown>);
     if (entries.length === 0) {
       return (
         <span>
