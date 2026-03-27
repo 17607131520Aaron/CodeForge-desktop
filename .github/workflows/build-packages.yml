@@ -2,6 +2,11 @@ name: Build Desktop Packages
 
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag to publish (e.g. v1.0.2). Leave empty to use package.json version."
+        required: false
+        type: string
   push:
     tags:
       - "v*"
@@ -33,6 +38,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
+
+      - name: Sync app metadata
+        run: pnpm app:meta
 
       - name: Build package
         run: |
@@ -73,6 +81,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
+      - name: Sync app metadata
+        run: pnpm app:meta
+
       - name: Build package
         run: pnpm make:win:x64
 
@@ -108,23 +119,34 @@ jobs:
 
       - name: Attach files to release
         env:
-          # Use dedicated PAT for release/tag operations.
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          # Prefer dedicated PAT (RELEASE_TOKEN), fallback to default GITHUB_TOKEN.
+          RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+          INPUT_RELEASE_TAG: ${{ github.event.inputs.release_tag }}
         run: |
           gh --version
           set -euo pipefail
 
+          GH_TOKEN="${RELEASE_TOKEN:-${GITHUB_TOKEN:-}}"
+          export GH_TOKEN
           if [ -z "${GH_TOKEN:-}" ]; then
-            echo "Missing RELEASE_TOKEN secret."
-            echo "Please set repository secret RELEASE_TOKEN (PAT with contents:write)."
+            echo "Missing token. Please provide RELEASE_TOKEN or use default GITHUB_TOKEN."
             exit 1
           fi
 
           if [ "${GITHUB_REF_TYPE:-}" = "tag" ] && [ -n "${GITHUB_REF_NAME:-}" ]; then
             TAG_NAME="$GITHUB_REF_NAME"
+          elif [ -n "${INPUT_RELEASE_TAG:-}" ]; then
+            TAG_NAME="$INPUT_RELEASE_TAG"
           else
             VERSION="$(node -p "require('./app.json').appVersion")"
             TAG_NAME="v$VERSION"
+          fi
+
+          if [[ ! "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-].+)?$ ]]; then
+            echo "Invalid tag format: $TAG_NAME"
+            echo "Expected format like: v1.0.2"
+            exit 1
           fi
 
           echo "Using release tag: $TAG_NAME"
@@ -140,9 +162,8 @@ jobs:
               -f ref="refs/tags/$TAG_NAME" \
               -f sha="$GITHUB_SHA" >/dev/null; then
               echo "Failed to create tag ref: $TAG_NAME"
-              echo "Repository rules are likely blocking this token from creating refs."
-              echo "Please allow this actor in ruleset bypass: $TOKEN_LOGIN"
-              echo "Also ensure ruleset target includes tag pattern: v*"
+              echo "Repository rules may block creating refs. Please verify ruleset and token permissions."
+              echo "If needed, allow this actor in ruleset bypass: $TOKEN_LOGIN"
               exit 1
             fi
           fi
