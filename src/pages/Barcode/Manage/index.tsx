@@ -3,42 +3,19 @@ import React, { useMemo, useState } from "react";
 import { Button, Card, Col, Form, Input, InputNumber, message, Row, Select, Space, Typography } from "antd";
 import Barcode from "react-barcode";
 
-import { CODE_TYPES } from "./constants";
-import { generateCodeId, generateRandomValueByType, validateValueByType } from "./utils";
+import { CODE_TYPES, CaoliaoQrErrorCorrection } from "./constants";
+import {
+  generateCodeId,
+  generateRandomValueByType,
+  validateValueByType,
+  buildCaoliaoQrSvgUrl,
+  parseSizeToPx,
+} from "./utils";
 
 import type { CodeType, IGeneratedCode } from "./constants";
 import "./index.scss";
 
 const { Title, Text } = Typography;
-
-const CAOLIAO_QR_CREATE_URL = "https://api.2dcode.biz/v1/create-qr-code";
-
-type CaoliaoQrErrorCorrection = "L" | "M" | "Q" | "H";
-type CaoliaoQrSettings = {
-  size: string; // e.g. "400x400"
-  errorCorrection: CaoliaoQrErrorCorrection;
-  border: number; // quiet zone / border in QR "modules"
-  version?: number; // QR version (may be ignored by API)
-};
-
-const buildCaoliaoQrSvgUrl = (value: string, settings: CaoliaoQrSettings): string => {
-  const params = new URLSearchParams({
-    data: value,
-    size: settings.size,
-    format: "svg",
-    error_correction: settings.errorCorrection,
-    border: String(settings.border),
-    ...(typeof settings.version === "number" ? { version: String(settings.version) } : {}),
-  });
-  return `${CAOLIAO_QR_CREATE_URL}?${params.toString()}`;
-};
-
-const parseSizeToPx = (size: string, fallback: number): number => {
-  // Accept "400x400" or "400"
-  const firstPart = size.split("x")[0]?.trim();
-  const n = Number.parseInt(firstPart || "", 10);
-  return Number.isFinite(n) && n > 0 ? n : fallback;
-};
 
 const BarcodeManage: React.FC = () => {
   const [form] = Form.useForm();

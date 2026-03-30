@@ -1,4 +1,6 @@
-import type { CodeType } from "./constants";
+import { CAOLIAO_QR_CREATE_URL } from "./constants";
+
+import type { CodeType, CaoliaoQrSettings } from "./constants";
 
 export const getRandomAlphaNum = (length: number): string => {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -145,4 +147,23 @@ let codeIdSeed = 0;
 export const generateCodeId = (): string => {
   codeIdSeed += 1;
   return `code-${Date.now()}-${codeIdSeed}-${Math.random().toString(36).slice(2, 8)}`;
+};
+
+export const buildCaoliaoQrSvgUrl = (value: string, settings: CaoliaoQrSettings): string => {
+  const params = new URLSearchParams({
+    data: value,
+    size: settings.size,
+    format: "svg",
+    error_correction: settings.errorCorrection,
+    border: String(settings.border),
+    ...(typeof settings.version === "number" ? { version: String(settings.version) } : {}),
+  });
+  return `${CAOLIAO_QR_CREATE_URL}?${params.toString()}`;
+};
+
+export const parseSizeToPx = (size: string, fallback: number): number => {
+  // Accept "400x400" or "400"
+  const firstPart = size.split("x")[0]?.trim();
+  const n = Number.parseInt(firstPart || "", 10);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
 };
