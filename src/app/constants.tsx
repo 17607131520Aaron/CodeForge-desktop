@@ -5,6 +5,7 @@ import {
   SettingOutlined,
   UnorderedListOutlined,
   UserOutlined,
+  BarChartOutlined,
 } from "@ant-design/icons";
 
 import type { MenuProps } from "antd";
@@ -15,18 +16,18 @@ export const menuItems: NonNullable<MenuProps["items"]> = [
     icon: <HomeOutlined />,
     label: "首页",
   },
-  // {
-  //   key: "barcode",
-  //   icon: <BarChartOutlined />,
-  //   label: "条码管理",
-  //   children: [
-  //     {
-  //       key: "/barcode/manage",
-  //       icon: <BarChartOutlined />,
-  //       label: "条码生成",
-  //     },
-  //   ],
-  // },
+  {
+    key: "barcode",
+    icon: <BarChartOutlined />,
+    label: "条码管理",
+    children: [
+      {
+        key: "/barcode/manage",
+        icon: <BarChartOutlined />,
+        label: "条码生成",
+      },
+    ],
+  },
   {
     key: "/debuglogs",
     icon: <UnorderedListOutlined />,

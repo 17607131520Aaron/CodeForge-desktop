@@ -1,0 +1,18 @@
+.barcode-manage-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 12px;
+  overflow: hidden;
+
+  .barcode-manage-result-card-container {
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+
+    .ant-card-body {
+      min-height: 0;
+      max-height: 100%;
+    }
+  }
+}

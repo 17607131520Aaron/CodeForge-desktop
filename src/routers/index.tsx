@@ -8,6 +8,8 @@ const Home = lazy(() => import("@/pages/Home"));
 const SmartserviceappDebugLogs = lazy(() => import("@/pages/DebugLogs"));
 const SmartserviceappDebugNetwork = lazy(() => import("@/pages/Netword"));
 const NotFoundPage = lazy(() => import("@/pages/NotFoundPage"));
+// Barcode 模块
+const BarcodeManage = lazy(() => import("@/pages/Barcode/Manage"));
 
 const router: DataRouter = createHashRouter([
   {
@@ -27,6 +29,10 @@ const router: DataRouter = createHashRouter([
       {
         path: "/network",
         element: <SmartserviceappDebugNetwork />,
+      },
+      {
+        path: "/barcode/manage",
+        element: <BarcodeManage />,
       },
     ],
   },
