@@ -1,12 +1,13 @@
 import {
   ApiOutlined,
+  BugOutlined,
   HomeOutlined,
   LogoutOutlined,
   SettingOutlined,
   UnorderedListOutlined,
   UserOutlined,
   BarChartOutlined,
-  BugOutlined,
+  ExperimentOutlined,
 } from "@ant-design/icons";
 
 import type { MenuProps } from "antd";
@@ -43,6 +44,18 @@ export const menuItems: NonNullable<MenuProps["items"]> = [
         key: "/network",
         icon: <ApiOutlined />,
         label: "network网络",
+      },
+    ],
+  },
+  {
+    key: "devtools",
+    icon: <ExperimentOutlined />,
+    label: "开发与测试",
+    children: [
+      {
+        key: "/test",
+        icon: <ExperimentOutlined />,
+        label: "组件测试台",
       },
     ],
   },
