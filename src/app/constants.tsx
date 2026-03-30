@@ -6,6 +6,7 @@ import {
   UnorderedListOutlined,
   UserOutlined,
   BarChartOutlined,
+  BugOutlined,
 } from "@ant-design/icons";
 
 import type { MenuProps } from "antd";
@@ -29,14 +30,21 @@ export const menuItems: NonNullable<MenuProps["items"]> = [
     ],
   },
   {
-    key: "/debuglogs",
-    icon: <UnorderedListOutlined />,
-    label: "日志",
-  },
-  {
-    key: "/network",
-    icon: <ApiOutlined />,
-    label: "网络",
+    key: "rndebug",
+    icon: <BugOutlined />,
+    label: "react native调试工具",
+    children: [
+      {
+        key: "/debuglogs",
+        icon: <UnorderedListOutlined />,
+        label: "js-log日志",
+      },
+      {
+        key: "/network",
+        icon: <ApiOutlined />,
+        label: "network网络",
+      },
+    ],
   },
 ];
 
