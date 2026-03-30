@@ -12,20 +12,32 @@ import "./index.scss";
 const { Title, Text } = Typography;
 
 const CAOLIAO_QR_CREATE_URL = "https://api.2dcode.biz/v1/create-qr-code";
-const CAOLIAO_QR_SIZE = 120;
-const CAOLIAO_QR_ERROR_CORRECTION: "L" | "M" | "Q" | "H" = "H";
-const CAOLIAO_QR_BORDER = 2;
 
-const buildCaoliaoQrSvgUrl = (value: string): string => {
-  const size = `${CAOLIAO_QR_SIZE}x${CAOLIAO_QR_SIZE}`;
+type CaoliaoQrErrorCorrection = "L" | "M" | "Q" | "H";
+type CaoliaoQrSettings = {
+  size: string; // e.g. "400x400"
+  errorCorrection: CaoliaoQrErrorCorrection;
+  border: number; // quiet zone / border in QR "modules"
+  version?: number; // QR version (may be ignored by API)
+};
+
+const buildCaoliaoQrSvgUrl = (value: string, settings: CaoliaoQrSettings): string => {
   const params = new URLSearchParams({
     data: value,
-    size,
+    size: settings.size,
     format: "svg",
-    error_correction: CAOLIAO_QR_ERROR_CORRECTION,
-    border: String(CAOLIAO_QR_BORDER),
+    error_correction: settings.errorCorrection,
+    border: String(settings.border),
+    ...(typeof settings.version === "number" ? { version: String(settings.version) } : {}),
   });
   return `${CAOLIAO_QR_CREATE_URL}?${params.toString()}`;
+};
+
+const parseSizeToPx = (size: string, fallback: number): number => {
+  // Accept "400x400" or "400"
+  const firstPart = size.split("x")[0]?.trim();
+  const n = Number.parseInt(firstPart || "", 10);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
 };
 
 const BarcodeManage: React.FC = () => {
@@ -33,8 +45,24 @@ const BarcodeManage: React.FC = () => {
   const [codes, setCodes] = useState<IGeneratedCode[]>([]);
 
   const lastType = Form.useWatch<CodeType>("type", form) || "QRCODE";
+  const qrErrorCorrection =
+    Form.useWatch<CaoliaoQrErrorCorrection>("qrErrorCorrection", form) ?? ("H" satisfies CaoliaoQrErrorCorrection);
+  const qrSize = Form.useWatch<string>("qrSize", form) ?? "120x120";
+  const qrBorder = Form.useWatch<number>("qrBorder", form) ?? 2;
+  const qrVersion = Form.useWatch<number>("qrVersion", form);
+  const qrSizePx = useMemo(() => parseSizeToPx(qrSize, 120), [qrSize]);
 
   const hasData = useMemo(() => codes.length > 0, [codes]);
+
+  const qrVersionOptions = useMemo(() => {
+    // QR version => matrix size: 21 + (v - 1) * 4
+    const max = 10; // UI intentionally limited; can extend later
+    return Array.from({ length: max }).map((_, idx) => {
+      const v = idx + 1;
+      const dim = 21 + (v - 1) * 4;
+      return { label: `${v} (${dim}*${dim})`, value: v };
+    });
+  }, []);
 
   const handleGenerate = (): void => {
     form
@@ -169,6 +197,10 @@ const BarcodeManage: React.FC = () => {
                 type: "QRCODE" as CodeType,
                 count: 10,
                 customValue: "",
+                qrErrorCorrection: "H" as CaoliaoQrErrorCorrection,
+                qrSize: "120x120",
+                qrBorder: 2,
+                qrVersion: 1,
               }}
               layout="vertical"
             >
@@ -227,6 +259,45 @@ const BarcodeManage: React.FC = () => {
                   </div>
                 </div>
               </Form.Item>
+
+              {lastType === "QRCODE" ? (
+                <>
+                  <Form.Item label="容错率" name="qrErrorCorrection">
+                    <Select
+                      options={[
+                        { label: "L（7%）", value: "L" },
+                        { label: "M（15%）", value: "M" },
+                        { label: "Q（25%）", value: "Q" },
+                        { label: "H（30%）", value: "H" },
+                      ]}
+                    />
+                  </Form.Item>
+
+                  <Form.Item label="尺寸" name="qrSize">
+                    <Select
+                      options={[
+                        { label: "120x120px", value: "120x120" },
+                        { label: "256x256px", value: "256x256" },
+                        { label: "300x300px", value: "300x300" },
+                        { label: "400x400px", value: "400x400" },
+                      ]}
+                    />
+                  </Form.Item>
+
+                  <Form.Item label="码版" name="qrVersion">
+                    <Select options={qrVersionOptions} />
+                  </Form.Item>
+
+                  <Form.Item label="码边距" name="qrBorder">
+                    <Select
+                      options={[0, 1, 2, 3, 4, 5].map((v) => ({
+                        label: `${v}（${v} 个色块）`,
+                        value: v,
+                      }))}
+                    />
+                  </Form.Item>
+                </>
+              ) : null}
             </Form>
           </Card>
         </div>
@@ -281,10 +352,15 @@ const BarcodeManage: React.FC = () => {
                           }}
                         >
                           <img
-                            src={buildCaoliaoQrSvgUrl(item.value)}
+                            src={buildCaoliaoQrSvgUrl(item.value, {
+                              size: qrSize,
+                              errorCorrection: qrErrorCorrection,
+                              border: qrBorder,
+                              version: qrVersion,
+                            })}
                             alt="二维码"
-                            width={CAOLIAO_QR_SIZE}
-                            height={CAOLIAO_QR_SIZE}
+                            width={qrSizePx}
+                            height={qrSizePx}
                             loading="lazy"
                             style={{ display: "block" }}
                           />
