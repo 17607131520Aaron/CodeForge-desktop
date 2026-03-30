@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from "react";
 
 import { Button, Card, Col, Form, Input, InputNumber, message, Row, Select, Space, Typography } from "antd";
-import { QRCodeCanvas } from "qrcode.react";
 import Barcode from "react-barcode";
 
 import { CODE_TYPES } from "./constants";
@@ -11,6 +10,23 @@ import type { CodeType, IGeneratedCode } from "./constants";
 import "./index.scss";
 
 const { Title, Text } = Typography;
+
+const CAOLIAO_QR_CREATE_URL = "https://api.2dcode.biz/v1/create-qr-code";
+const CAOLIAO_QR_SIZE = 120;
+const CAOLIAO_QR_ERROR_CORRECTION: "L" | "M" | "Q" | "H" = "H";
+const CAOLIAO_QR_BORDER = 2;
+
+const buildCaoliaoQrSvgUrl = (value: string): string => {
+  const size = `${CAOLIAO_QR_SIZE}x${CAOLIAO_QR_SIZE}`;
+  const params = new URLSearchParams({
+    data: value,
+    size,
+    format: "svg",
+    error_correction: CAOLIAO_QR_ERROR_CORRECTION,
+    border: String(CAOLIAO_QR_BORDER),
+  });
+  return `${CAOLIAO_QR_CREATE_URL}?${params.toString()}`;
+};
 
 const BarcodeManage: React.FC = () => {
   const [form] = Form.useForm();
@@ -65,11 +81,15 @@ const BarcodeManage: React.FC = () => {
           .filter((v): v is string => !!v);
 
         if (lines.length === 0) {
+          // 避免输入无效时仍保留旧的渲染结果
+          setCodes([]);
           message.warning("请输入需要生成条码的内容");
           return;
         }
 
         if (lines.length > 100) {
+          // 避免输入无效时仍保留旧的渲染结果
+          setCodes([]);
           message.warning("一次最多根据 100 行内容生成条码，请适当减少行数");
           return;
         }
@@ -79,6 +99,8 @@ const BarcodeManage: React.FC = () => {
           const line = lines[i] as string;
           const err = validateValueByType(type, line);
           if (err) {
+            // 避免某一行校验失败时仍保留旧的渲染结果
+            setCodes([]);
             message.error(`第 ${i + 1} 行：${err}`);
             return;
           }
@@ -94,7 +116,8 @@ const BarcodeManage: React.FC = () => {
         message.success(`已根据内容生成 ${lines.length} 个条码`);
       })
       .catch(() => {
-        // ignore
+        // 表单校验失败时也清理旧结果，避免误以为已生成
+        setCodes([]);
       });
   };
 
@@ -257,13 +280,13 @@ const BarcodeManage: React.FC = () => {
                             borderRadius: 4,
                           }}
                         >
-                          <QRCodeCanvas
-                            includeMargin
-                            bgColor="#ffffff"
-                            fgColor="#000000"
-                            level="H"
-                            size={120}
-                            value={item.value}
+                          <img
+                            src={buildCaoliaoQrSvgUrl(item.value)}
+                            alt="二维码"
+                            width={CAOLIAO_QR_SIZE}
+                            height={CAOLIAO_QR_SIZE}
+                            loading="lazy"
+                            style={{ display: "block" }}
                           />
                         </div>
                       ) : (
