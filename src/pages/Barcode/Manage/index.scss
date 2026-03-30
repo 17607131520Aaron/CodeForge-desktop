@@ -5,6 +5,21 @@
   padding: 12px;
   overflow: hidden;
 
+  .barcode-manage-main {
+    margin-top: 16px;
+    display: flex;
+    gap: 16px;
+    flex: 1;
+    min-height: 0;
+    align-items: stretch;
+  }
+
+  .barcode-manage-form-card {
+    width: 420px;
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+
   .barcode-manage-result-card-container {
     flex: 1;
     width: 100%;
@@ -13,6 +28,24 @@
     .ant-card-body {
       min-height: 0;
       max-height: 100%;
+    }
+  }
+
+  @media (max-width: 768px) {
+    overflow: auto;
+
+    .barcode-manage-main {
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .barcode-manage-form-card {
+      width: 100%;
+    }
+
+    /* Ant Card 使用了行内 `height: 100%`；小屏堆叠时需要改为自适应，否则会挤压结果区。 */
+    .barcode-manage-form-card .ant-card {
+      height: auto !important;
     }
   }
 }

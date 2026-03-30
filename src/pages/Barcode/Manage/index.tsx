@@ -151,17 +151,8 @@ const BarcodeManage: React.FC = () => {
       <Title level={3}>条码管理</Title>
       <Text type="secondary">通过选择条码类型与数量，一键随机生成多个条码，可用于测试或打印前预览。</Text>
 
-      <div
-        style={{
-          marginTop: 16,
-          display: "flex",
-          gap: 16,
-          flex: 1,
-          minHeight: 0,
-          alignItems: "stretch",
-        }}
-      >
-        <div style={{ width: 420, flexShrink: 0 }}>
+      <div className="barcode-manage-main">
+        <div className="barcode-manage-form-card">
           <Card
             size="small"
             style={{ height: "100%", borderRadius: 8 }}
