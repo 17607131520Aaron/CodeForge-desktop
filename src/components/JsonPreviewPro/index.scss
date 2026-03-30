@@ -1,0 +1,97 @@
+.json-preview-pro {
+  border: 1px solid #e6eaf0;
+  border-radius: 10px;
+  background: #ffffff;
+
+  mark {
+    background: #fff1b8;
+    border-radius: 3px;
+    padding: 0 2px;
+  }
+}
+
+.jvp-toolbar {
+  padding: 10px;
+  border-bottom: 1px solid #f0f2f5;
+}
+
+.jvp-body {
+  padding: 10px;
+  overflow: auto;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.jvp-row {
+  white-space: nowrap;
+}
+
+.jvp-toggle-btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin-right: 4px;
+  cursor: pointer;
+  color: #8c8c8c;
+  width: 14px;
+}
+
+.jvp-toggle-placeholder {
+  display: inline-block;
+  width: 14px;
+  margin-right: 4px;
+}
+
+.jvp-key {
+  color: #003a8c;
+}
+
+.jvp-value-string {
+  color: #cf1322;
+}
+
+.jvp-value-number {
+  color: #1d39c4;
+}
+
+.jvp-value-boolean {
+  color: #531dab;
+}
+
+.jvp-value-null {
+  color: #8c8c8c;
+}
+
+.jvp-bracket {
+  color: #595959;
+}
+
+.jvp-summary {
+  color: #8c8c8c;
+  margin: 0 6px;
+}
+
+.jvp-empty {
+  padding: 20px 12px;
+  color: #8c8c8c;
+}
+
+.jvp-error {
+  margin: 0;
+  padding: 10px 12px;
+  color: #cf1322;
+  background: #fff1f0;
+  border-top: 1px solid #ffccc7;
+}
+
+.jvp-raw {
+  margin: 0;
+  padding: 10px 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
