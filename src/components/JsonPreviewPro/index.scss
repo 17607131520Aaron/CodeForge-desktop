@@ -95,3 +95,30 @@
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
+.jvp-copy-path {
+  display: none;
+  margin-left: 6px;
+  padding: 0 4px;
+  border: none;
+  background: transparent;
+  color: #656d76;
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0.75;
+  vertical-align: middle;
+}
+
+.jvp-primitive:hover > .jvp-copy-path,
+.jvp-collapsible:hover > .jvp-copy-path {
+  display: inline;
+}
+
+.jvp-link {
+  color: #0969da;
+  text-decoration: none;
+}
+
+.jvp-link:hover {
+  text-decoration: underline;
+}
+

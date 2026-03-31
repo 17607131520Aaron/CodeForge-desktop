@@ -14,14 +14,24 @@ type JsonPreviewProProps = {
   maxHeight?: number;
 };
 
-type MatchSet = Set<string>;
-
 const ROOT_PATH = "$";
 
 const isObject = (value: JsonValue): value is { [key: string]: JsonValue } =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
 const isCollapsible = (value: JsonValue): boolean => Array.isArray(value) || isObject(value);
+
+const isUrl = (str: string): boolean => /^https?:\/\//.test(str);
+
+// Match JSONPath-ish path style used by JSON Viewer Pro:
+// - valid identifier: $.a
+// - otherwise: $["full name"]
+const generatePath = (base: string, key: string): string => {
+  if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key)) {
+    return `${base}.${key}`;
+  }
+  return `${base}[${JSON.stringify(key)}]`;
+};
 
 const safeStringify = (value: unknown): string => {
   try {
@@ -61,52 +71,28 @@ const collectDefaultExpanded = (value: JsonValue, depth: number, path: string, s
   }
 
   if (isObject(value)) {
-    Object.entries(value).forEach(([key, item]) => collectDefaultExpanded(item, depth - 1, `${path}.${key}`, set));
+    Object.entries(value).forEach(([key, item]) => {
+      collectDefaultExpanded(item, depth - 1, generatePath(path, key), set);
+    });
   }
 };
 
-const collectSearchMatches = (value: JsonValue, path: string, keyword: string, matches: MatchSet): boolean => {
-  const k = keyword.toLowerCase();
-  let selfMatch = false;
+// Plugin behavior: auto-collapse large nodes at depth > 1 and count > 10.
+const collectAutoCollapsedPaths = (value: JsonValue, level: number, path: string, set: Set<string>): void => {
+  if (!isCollapsible(value)) {return;}
 
-  if (typeof value === "string") {selfMatch = value.toLowerCase().includes(k);}
-  else if (typeof value === "number" || typeof value === "boolean" || value === null) {
-    selfMatch = String(value).toLowerCase().includes(k);
-  }
-
-  if (selfMatch) {
-    matches.add(path);
-    return true;
+  const count = Array.isArray(value) ? value.length : Object.keys(value).length;
+  if (level > 1 && count > 10) {
+    set.add(path);
   }
 
   if (Array.isArray(value)) {
-    let childMatch = false;
-    value.forEach((item, index) => {
-      const p = `${path}[${index}]`;
-      if (collectSearchMatches(item, p, keyword, matches)) {
-        childMatch = true;
-      }
-    });
-    if (childMatch) {matches.add(path);}
-    return childMatch;
-  }
-
-  if (isObject(value)) {
-    let childMatch = false;
+    value.forEach((item, idx) => collectAutoCollapsedPaths(item, level + 1, `${path}[${idx}]`, set));
+  } else {
     Object.entries(value).forEach(([key, item]) => {
-      const p = `${path}.${key}`;
-      const keyMatch = key.toLowerCase().includes(k);
-      const valueMatch = collectSearchMatches(item, p, keyword, matches);
-      if (keyMatch || valueMatch) {
-        childMatch = true;
-        matches.add(p);
-      }
+      collectAutoCollapsedPaths(item, level + 1, generatePath(path, key), set);
     });
-    if (childMatch) {matches.add(path);}
-    return childMatch;
   }
-
-  return false;
 };
 
 const highlightText = (text: string, keyword: string): React.ReactNode => {
@@ -132,17 +118,15 @@ const JsonNode: React.FC<{
   depth: number;
   expanded: Set<string>;
   keyword: string;
-  matches: MatchSet;
+  copiedId: string | null;
   onToggle: (path: string) => void;
+  onNodeCopy: (id: string, text: string) => void;
   path: string;
-  propKey?: string;
+  propKey?: string | number;
   value: JsonValue;
-}> = ({ depth, expanded, keyword, matches, onToggle, path, propKey, value }) => {
+}> = ({ depth, expanded, keyword, copiedId, onToggle, onNodeCopy, path, propKey, value }) => {
   const collapsible = isCollapsible(value);
   const isExpanded = expanded.has(path);
-  const showBySearch = keyword.trim() ? matches.has(path) : true;
-
-  if (!showBySearch) {return null;}
 
   const indentStyle = { paddingLeft: `${depth * 16}px` };
 
@@ -156,13 +140,30 @@ const JsonNode: React.FC<{
             ? "jvp-value-boolean"
             : "jvp-value-null";
 
+    const copyId = `value:${path}`;
     return (
-      <div className="jvp-row" style={indentStyle}>
+      <div className="jvp-row jvp-primitive" style={indentStyle}>
         <span className="jvp-toggle-placeholder" />
-        {typeof propKey === "string" && <span className="jvp-key">{highlightText(`"${propKey}"`, keyword)}: </span>}
+        {propKey !== undefined && <span className="jvp-key">{highlightText(JSON.stringify(propKey), keyword)}: </span>}
         <span className={valueClass}>
-          {typeof value === "string" ? `"${highlightText(value, keyword)}"` : highlightText(String(value), keyword)}
+          {typeof value === "string" && isUrl(value) ? (
+            <a className="jvp-link" href={value} target="_blank" rel="noopener noreferrer">
+              {highlightText(JSON.stringify(value), keyword)}
+            </a>
+          ) : (
+            highlightText(typeof value === "string" ? JSON.stringify(value) : String(value), keyword)
+          )}
         </span>
+        <button
+          className="jvp-copy-path"
+          title={`Copy: ${path}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onNodeCopy(copyId, typeof value === "string" ? value : JSON.stringify(value));
+          }}
+        >
+          {copiedId === copyId ? "✓" : "\u2398"}
+        </button>
       </div>
     );
   }
@@ -173,13 +174,27 @@ const JsonNode: React.FC<{
 
   return (
     <>
-      <div className="jvp-row" style={indentStyle}>
+      <div className="jvp-row jvp-collapsible" style={indentStyle}>
         <button className="jvp-toggle-btn" onClick={() => onToggle(path)}>
           {isExpanded ? <DownOutlined /> : <RightOutlined />}
         </button>
-        {typeof propKey === "string" && <span className="jvp-key">{highlightText(`"${propKey}"`, keyword)}: </span>}
+        {propKey !== undefined && <span className="jvp-key">{highlightText(JSON.stringify(propKey), keyword)}: </span>}
         <span className="jvp-bracket">{bracketOpen}</span>
         {!isExpanded && <span className="jvp-summary">{summary}</span>}
+        {/*
+          Plugin behavior: each collapsible node should offer "copy path".
+          This is hidden by default and becomes visible on hover via CSS.
+        */}
+        <button
+          className="jvp-copy-path"
+          title={`Copy path: ${path}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onNodeCopy(`path:${path}`, path);
+          }}
+        >
+          {copiedId === `path:${path}` ? "✓" : "\u2398"}
+        </button>
         <span className="jvp-bracket">{!isExpanded ? bracketClose : ""}</span>
       </div>
 
@@ -191,22 +206,25 @@ const JsonNode: React.FC<{
                 depth={depth + 1}
                 expanded={expanded}
                 keyword={keyword}
-                matches={matches}
+                copiedId={copiedId}
                 onToggle={onToggle}
+                onNodeCopy={onNodeCopy}
                 path={`${path}[${idx}]`}
+                propKey={idx}
                 value={item}
               />
             ))
           : isObject(value)
             ? Object.entries(value).map(([k, item]) => (
                 <JsonNode
-                  key={`${path}.${k}`}
+                  key={generatePath(path, k)}
                   depth={depth + 1}
                   expanded={expanded}
                   keyword={keyword}
-                  matches={matches}
+                  copiedId={copiedId}
                   onToggle={onToggle}
-                  path={`${path}.${k}`}
+                  onNodeCopy={onNodeCopy}
+                  path={generatePath(path, k)}
                   propKey={k}
                   value={item}
                 />
@@ -232,6 +250,9 @@ const JsonPreviewPro: React.FC<JsonPreviewProProps> = ({ value, defaultExpandDep
     if (parsed === null) {return new Set<string>();}
     const set = new Set<string>();
     collectDefaultExpanded(parsed, defaultExpandDepth, ROOT_PATH, set);
+    const autoCollapsed = new Set<string>();
+    collectAutoCollapsedPaths(parsed, 0, ROOT_PATH, autoCollapsed);
+    autoCollapsed.forEach((p) => set.delete(p));
     return set;
   }, [defaultExpandDepth, parsed]);
 
@@ -241,30 +262,90 @@ const JsonPreviewPro: React.FC<JsonPreviewProProps> = ({ value, defaultExpandDep
     setExpanded(defaultExpanded);
   }, [defaultExpanded]);
 
-  const matches = useMemo(() => {
-    const set: MatchSet = new Set<string>();
-    if (!parsed || !keyword.trim()) {return set;}
-    collectSearchMatches(parsed, ROOT_PATH, keyword, set);
-    return set;
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const copyTimerRef = React.useRef<number | null>(null);
+
+  React.useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) {
+        window.clearTimeout(copyTimerRef.current);
+      }
+    };
+  }, []);
+
+  const prettyText = useMemo(() => {
+    if (parsed === null) {
+      return "";
+    }
+    return safeStringify(parsed);
+  }, [parsed]);
+
+  const searchInfo = useMemo(() => {
+    const k = keyword.trim().toLowerCase();
+    const matchedPaths = new Set<string>();
+    const ancestorsToExpand = new Set<string>();
+
+    if (!parsed || !k) {
+      return { matchedPaths, ancestorsToExpand };
+    }
+
+    const walk = (
+      val: JsonValue,
+      currentPath: string,
+      keyValue: string | number | undefined,
+      ancestors: string[],
+    ): void => {
+      const keyText = keyValue === undefined ? null : JSON.stringify(keyValue);
+      const selfKeyMatch = keyText !== null && keyText.toLowerCase().includes(k);
+
+      if (!isCollapsible(val)) {
+        const valueText =
+          typeof val === "string" ? JSON.stringify(val) : val === null ? "null" : String(val);
+        const selfValueMatch = valueText.toLowerCase().includes(k);
+        if (selfKeyMatch || selfValueMatch) {
+          matchedPaths.add(currentPath);
+          ancestors.forEach((a) => ancestorsToExpand.add(a));
+        }
+        return;
+      }
+
+      if (selfKeyMatch) {
+        matchedPaths.add(currentPath);
+        ancestors.forEach((a) => ancestorsToExpand.add(a));
+      }
+
+      if (Array.isArray(val)) {
+        val.forEach((item, idx) => {
+          walk(item, `${currentPath}[${idx}]`, idx, [...ancestors, currentPath]);
+        });
+      } else {
+        Object.entries(val).forEach(([childKey, item]) => {
+          const childPath = generatePath(currentPath, childKey);
+          walk(item, childPath, childKey, [...ancestors, currentPath]);
+        });
+      }
+    };
+
+    walk(parsed, ROOT_PATH, undefined, []);
+
+    return { matchedPaths, ancestorsToExpand };
   }, [keyword, parsed]);
 
-  const effectiveExpanded = useMemo(() => {
-    if (!keyword.trim()) {return expanded;}
-    const merged = new Set<string>(expanded);
-    matches.forEach((p) => {
-      let current = p;
-      while (current.includes(".")) {
-        current = current.substring(0, current.lastIndexOf("."));
-        merged.add(current);
-      }
-      while (current.includes("[")) {
-        current = current.substring(0, current.lastIndexOf("["));
-        merged.add(current);
-      }
-      merged.add(ROOT_PATH);
+  React.useEffect(() => {
+    // Plugin behavior: search expands ancestors of matched nodes and doesn't auto-collapse when keyword clears.
+    if (!keyword.trim()) {
+      return;
+    }
+    if (searchInfo.ancestorsToExpand.size === 0) {
+      return;
+    }
+
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      searchInfo.ancestorsToExpand.forEach((p) => next.add(p));
+      return next;
     });
-    return merged;
-  }, [expanded, keyword, matches]);
+  }, [keyword, searchInfo.ancestorsToExpand]);
 
   const onToggle = (path: string): void => {
     setExpanded((prev) => {
@@ -277,8 +358,22 @@ const JsonPreviewPro: React.FC<JsonPreviewProProps> = ({ value, defaultExpandDep
 
   const handleCopy = async (): Promise<void> => {
     try {
-      await navigator.clipboard.writeText(raw);
+      const textToCopy = parsed === null ? raw : prettyText;
+      await navigator.clipboard.writeText(textToCopy);
       message.success("已复制 JSON");
+    } catch {
+      message.error("复制失败");
+    }
+  };
+
+  const onNodeCopy = async (id: string, text: string): Promise<void> => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(id);
+      if (copyTimerRef.current) {
+        window.clearTimeout(copyTimerRef.current);
+      }
+      copyTimerRef.current = window.setTimeout(() => setCopiedId(null), 1200);
     } catch {
       message.error("复制失败");
     }
@@ -292,7 +387,8 @@ const JsonPreviewPro: React.FC<JsonPreviewProProps> = ({ value, defaultExpandDep
   };
 
   const handleCollapseAll = (): void => {
-    setExpanded(new Set<string>([ROOT_PATH]));
+    // Collapse all collapsible nodes (including root)
+    setExpanded(new Set<string>());
   };
 
   if (error) {
@@ -350,7 +446,11 @@ const JsonPreviewPro: React.FC<JsonPreviewProProps> = ({ value, defaultExpandDep
           <Button icon={<CopyOutlined />} onClick={handleCopy}>
             复制 JSON
           </Button>
-          {keyword.trim() && <Tag color="blue">匹配 {Math.max(0, matches.size - 1)} 个节点</Tag>}
+          {keyword.trim() && (
+            <Tag color="blue">
+              匹配 {searchInfo.matchedPaths.size} 个节点
+            </Tag>
+          )}
         </Space>
       </div>
 
@@ -360,11 +460,12 @@ const JsonPreviewPro: React.FC<JsonPreviewProProps> = ({ value, defaultExpandDep
         ) : (
           <JsonNode
             depth={0}
-            expanded={effectiveExpanded}
             keyword={keyword}
-            matches={matches}
             onToggle={onToggle}
+            copiedId={copiedId}
+            onNodeCopy={onNodeCopy}
             path={ROOT_PATH}
+            expanded={expanded}
             value={parsed}
           />
         )}

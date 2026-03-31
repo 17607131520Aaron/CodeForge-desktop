@@ -8,21 +8,62 @@ import JsonPreviewPro from "@/components/JsonPreviewPro";
 const { Text, Title } = Typography;
 const { TextArea } = Input;
 
+// 覆盖尽可能多的 JSON 类型和边界情况（字符串/数字/布尔/null/数组/对象/空对象/空数组/URL/Unicode/特殊 key）
 const SAMPLE_JSON = `{
   "name": "JSON Viewer Pro Demo",
+  "version": 1,
+  "enabled": true,
+  "count": 0,
+  "nullValue": null,
+  "emptyObj": {},
+  "emptyArr": [],
+  "simpleString": "hello",
+  "multilineString": "line1\\nline2",
+  "longString": "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
+  "url": "https://example.com/path/to/resource?query=abc#hash",
+  "emoji": "I love \\u2764\\uFE0F",
+  "unicode": "\\u4F60\\u597D", 
+
   "meta": {
-    "version": "1.0.0",
-    "enabled": true,
-    "tags": ["viewer", "debug", "chrome-style"]
+    "build": "2026-03-30",
+    "enabled": false,
+    "tags": ["viewer", "debug", "tree", "search", "copy"],
+    "nested": {
+      "a.b": 123,
+      "full name": "Aaron",
+      "0key": "starts with number",
+      "foo-bar": "dash key",
+      "_private": "underscore key",
+      "$ref": "dollar key"
+    }
   },
+
   "users": [
-    { "id": 1, "nickname": "alice", "active": true },
-    { "id": 2, "nickname": "bob", "active": false }
+    { "id": 1, "nickname": "alice", "active": true, "role": null },
+    { "id": 2, "nickname": "bob", "active": false, "role": "admin" },
+    { "id": 3, "nickname": "charlie", "active": true, "role": "viewer" }
   ],
+
+  "mixedArray": [
+    "str",
+    42,
+    false,
+    null,
+    { "deep key": { "x.y": [1, 2, 3], "empty": {} } }
+  ],
+
+  "bigArray": [
+    1,2,3,4,5,6,7,8,9,10,
+    11,12,13,14,15,16,17,18,19,20,
+    21,22,23,24,25,26,27,28,29,30,
+    31,32,33,34,35,36,37,38,39,40
+  ],
+
   "stats": {
     "requests": 12904,
     "latencyMs": 43.6,
-    "errorRate": 0.012
+    "errorRate": 0.012,
+    "smallNumbers": [0, 0.001, -2]
   }
 }`;
 
