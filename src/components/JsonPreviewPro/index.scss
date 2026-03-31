@@ -10,6 +10,12 @@
   }
 }
 
+.json-preview-pro.jvp-plain {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
 .jvp-toolbar {
   padding: 10px;
   border-bottom: 1px solid #f0f2f5;
@@ -22,6 +28,12 @@
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 12px;
   line-height: 1.8;
+}
+
+.jvp-body-inline {
+  padding: 0;
+  overflow: visible;
+  max-height: none;
 }
 
 .jvp-row {

@@ -1,7 +1,7 @@
 // JSON 折叠查看组件（类似 Chrome DevTools），支持一条日志里“对象 + 追加文本”的形式
 import React, { useState } from "react";
 
-import JsonValue from "./JsonValue";
+import JsonPreviewPro from "@/components/JsonPreviewPro";
 
 const CollapsibleJson: React.FC<{ message: string; onContentResize?: () => void }> = ({ message, onContentResize }) => {
   type Segment = { type: "text"; text: string } | { type: "json"; parsed: unknown; raw: string };
@@ -96,7 +96,14 @@ const CollapsibleJson: React.FC<{ message: string; onContentResize?: () => void 
   if (onlySegment && onlySegment.type === "json" && message.trim() === onlySegment.raw.trim()) {
     return (
       <div className="chrome-like-json">
-        <JsonValue level={0} value={onlySegment.parsed} onExpandedChange={onContentResize} />
+        <JsonPreviewPro
+          variant="inline"
+          outerVariant="plain"
+          showToolbar={false}
+          defaultExpandDepth={2}
+          value={onlySegment.parsed}
+          onExpandedChange={onContentResize}
+        />
       </div>
     );
   }
@@ -109,7 +116,14 @@ const CollapsibleJson: React.FC<{ message: string; onContentResize?: () => void 
           <span key={index}>{seg.text}</span>
         ) : (
           <div key={index} className="chrome-like-json" style={{ marginLeft: 4 }}>
-            <JsonValue level={0} value={seg.parsed} onExpandedChange={onContentResize} />
+            <JsonPreviewPro
+              variant="inline"
+              outerVariant="plain"
+              showToolbar={false}
+              defaultExpandDepth={2}
+              value={seg.parsed}
+              onExpandedChange={onContentResize}
+            />
           </div>
         ),
       )}

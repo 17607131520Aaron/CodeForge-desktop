@@ -12,6 +12,10 @@ type JsonPreviewProProps = {
   value: unknown;
   defaultExpandDepth?: number;
   maxHeight?: number;
+  variant?: "default" | "inline";
+  outerVariant?: "card" | "plain";
+  showToolbar?: boolean;
+  onExpandedChange?: () => void;
 };
 
 const ROOT_PATH = "$";
@@ -241,10 +245,28 @@ const JsonNode: React.FC<{
   );
 };
 
-const JsonPreviewPro: React.FC<JsonPreviewProProps> = ({ value, defaultExpandDepth = 2, maxHeight = 520 }) => {
+const JsonPreviewPro: React.FC<JsonPreviewProProps> = ({
+  value,
+  defaultExpandDepth = 2,
+  maxHeight = 520,
+  variant = "default",
+  outerVariant = "card",
+  showToolbar,
+  onExpandedChange,
+}) => {
+  const resolvedVariant = variant;
+  const showToolbarEffective = showToolbar ?? resolvedVariant === "default";
+  const outerVariantEffective = outerVariant;
+
   const [keyword, setKeyword] = useState("");
   const [viewMode, setViewMode] = useState<"tree" | "raw">("tree");
   const { parsed, error, raw } = useMemo(() => parseJsonLike(value), [value]);
+
+  React.useEffect(() => {
+    if (!showToolbarEffective) {
+      setViewMode("tree");
+    }
+  }, [showToolbarEffective]);
 
   const defaultExpanded = useMemo(() => {
     if (parsed === null) {return new Set<string>();}
@@ -347,6 +369,15 @@ const JsonPreviewPro: React.FC<JsonPreviewProProps> = ({ value, defaultExpandDep
     });
   }, [keyword, searchInfo.ancestorsToExpand]);
 
+  const triggerExpandedChange = (): void => {
+    if (!onExpandedChange) {
+      return;
+    }
+    window.requestAnimationFrame(() => {
+      onExpandedChange?.();
+    });
+  };
+
   const onToggle = (path: string): void => {
     setExpanded((prev) => {
       const next = new Set(prev);
@@ -354,6 +385,7 @@ const JsonPreviewPro: React.FC<JsonPreviewProProps> = ({ value, defaultExpandDep
       else {next.add(path);}
       return next;
     });
+    triggerExpandedChange();
   };
 
   const handleCopy = async (): Promise<void> => {
@@ -384,21 +416,25 @@ const JsonPreviewPro: React.FC<JsonPreviewProProps> = ({ value, defaultExpandDep
     const all = new Set<string>();
     collectDefaultExpanded(parsed, Number.MAX_SAFE_INTEGER, ROOT_PATH, all);
     setExpanded(all);
+    triggerExpandedChange();
   };
 
   const handleCollapseAll = (): void => {
     // Collapse all collapsible nodes (including root)
     setExpanded(new Set<string>());
+    triggerExpandedChange();
   };
 
   if (error) {
     return (
-      <div className="json-preview-pro">
-        <div className="jvp-toolbar">
-          <Button icon={<CopyOutlined />} onClick={handleCopy}>
-            复制原文
-          </Button>
-        </div>
+      <div className={`json-preview-pro ${outerVariantEffective === "plain" ? "jvp-plain" : ""}`}>
+        {showToolbarEffective && (
+          <div className="jvp-toolbar">
+            <Button icon={<CopyOutlined />} onClick={handleCopy}>
+              复制原文
+            </Button>
+          </div>
+        )}
         <pre className="jvp-error">{error}</pre>
         <pre className="jvp-raw">{raw}</pre>
       </div>
@@ -407,55 +443,59 @@ const JsonPreviewPro: React.FC<JsonPreviewProProps> = ({ value, defaultExpandDep
 
   if (parsed === null) {
     return (
-      <div className="json-preview-pro">
-        <div className="jvp-toolbar">
-          <Button icon={<CopyOutlined />} onClick={handleCopy}>
-            复制
-          </Button>
-        </div>
+      <div className={`json-preview-pro ${outerVariantEffective === "plain" ? "jvp-plain" : ""}`}>
+        {showToolbarEffective && (
+          <div className="jvp-toolbar">
+            <Button icon={<CopyOutlined />} onClick={handleCopy}>
+              复制
+            </Button>
+          </div>
+        )}
         <div className="jvp-empty">暂无 JSON 内容</div>
       </div>
     );
   }
 
   return (
-    <div className="json-preview-pro">
-      <div className="jvp-toolbar">
-        <Space wrap>
-          <Input
-            allowClear
-            placeholder="搜索 key / value"
-            prefix={<SearchOutlined />}
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-          />
-          <Segmented
-            options={[
-              { label: "Tree", value: "tree" },
-              { label: "Raw", value: "raw" },
-            ]}
-            value={viewMode}
-            onChange={(v) => setViewMode(v as "tree" | "raw")}
-          />
-          <Tooltip title="展开全部节点">
-            <Button onClick={handleExpandAll}>展开全部</Button>
-          </Tooltip>
-          <Tooltip title="收起全部节点">
-            <Button onClick={handleCollapseAll}>收起全部</Button>
-          </Tooltip>
-          <Button icon={<CopyOutlined />} onClick={handleCopy}>
-            复制 JSON
-          </Button>
-          {keyword.trim() && (
-            <Tag color="blue">
-              匹配 {searchInfo.matchedPaths.size} 个节点
-            </Tag>
-          )}
-        </Space>
-      </div>
+    <div className={`json-preview-pro ${outerVariantEffective === "plain" ? "jvp-plain" : ""}`}>
+      {showToolbarEffective && (
+        <div className="jvp-toolbar">
+          <Space wrap>
+            <Input
+              allowClear
+              placeholder="搜索 key / value"
+              prefix={<SearchOutlined />}
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+            />
+            <Segmented
+              options={[
+                { label: "Tree", value: "tree" },
+                { label: "Raw", value: "raw" },
+              ]}
+              value={viewMode}
+              onChange={(v) => setViewMode(v as "tree" | "raw")}
+            />
+            <Tooltip title="展开全部节点">
+              <Button onClick={handleExpandAll}>展开全部</Button>
+            </Tooltip>
+            <Tooltip title="收起全部节点">
+              <Button onClick={handleCollapseAll}>收起全部</Button>
+            </Tooltip>
+            <Button icon={<CopyOutlined />} onClick={handleCopy}>
+              复制 JSON
+            </Button>
+            {keyword.trim() && (
+              <Tag color="blue">
+                匹配 {searchInfo.matchedPaths.size} 个节点
+              </Tag>
+            )}
+          </Space>
+        </div>
+      )}
 
-      <div className="jvp-body" style={{ maxHeight }}>
-        {viewMode === "raw" ? (
+      <div className={showToolbarEffective ? "jvp-body" : "jvp-body jvp-body-inline"} style={showToolbarEffective ? { maxHeight } : undefined}>
+        {showToolbarEffective && viewMode === "raw" ? (
           <pre className="jvp-raw">{safeStringify(parsed)}</pre>
         ) : (
           <JsonNode

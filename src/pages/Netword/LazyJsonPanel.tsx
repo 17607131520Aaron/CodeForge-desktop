@@ -3,7 +3,7 @@ import React, { useMemo } from "react";
 import { CopyOutlined } from "@ant-design/icons";
 import { Button, Space, Typography, message } from "antd";
 
-import JsonValue from "../DebugLogs/JsonValue";
+import JsonPreviewPro from "@/components/JsonPreviewPro";
 
 import { normalizeJsonLikeValue, stringifyDisplayValue } from "./utils";
 
@@ -55,9 +55,13 @@ const LazyJsonPanel: React.FC<LazyJsonPanelProps> = ({ copyLabel, emptyFallback,
           注意：服务器已对内容做截断，展示内容可能不完整。
         </Text>
       )}
-      <div className="chrome-like-json">
-        <JsonValue defaultExpandedDepth={DEFAULT_EXPANDED_DEPTH} value={normalizedValue} />
-      </div>
+      <JsonPreviewPro
+        variant="inline"
+        outerVariant="plain"
+        showToolbar={false}
+        defaultExpandDepth={DEFAULT_EXPANDED_DEPTH}
+        value={normalizedValue}
+      />
     </>
   );
 };
