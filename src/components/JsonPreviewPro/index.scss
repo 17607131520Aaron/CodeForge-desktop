@@ -2,9 +2,10 @@
   border: 1px solid #e6eaf0;
   border-radius: 10px;
   background: #ffffff;
+  color: var(--jvp-text-color, #1f2937);
 
   mark {
-    background: #fff1b8;
+    background: var(--jvp-mark-bg, #fff1b8);
     border-radius: 3px;
     padding: 0 2px;
   }
@@ -38,6 +39,12 @@
 
 .jvp-row {
   white-space: nowrap;
+  border-radius: 4px;
+}
+
+.jvp-primitive:hover,
+.jvp-collapsible:hover {
+  background: var(--jvp-row-hover-bg, rgb(0 0 0 / 3%));
 }
 
 .jvp-toggle-btn {
@@ -46,7 +53,7 @@
   padding: 0;
   margin-right: 4px;
   cursor: pointer;
-  color: #8c8c8c;
+  color: var(--jvp-toggle-color, #8c8c8c);
   width: 14px;
 }
 
@@ -57,31 +64,31 @@
 }
 
 .jvp-key {
-  color: #003a8c;
+  color: var(--jvp-key-color, #003a8c);
 }
 
 .jvp-value-string {
-  color: #cf1322;
+  color: var(--jvp-string-color, #cf1322);
 }
 
 .jvp-value-number {
-  color: #1d39c4;
+  color: var(--jvp-number-color, #1d39c4);
 }
 
 .jvp-value-boolean {
-  color: #531dab;
+  color: var(--jvp-boolean-color, #531dab);
 }
 
 .jvp-value-null {
-  color: #8c8c8c;
+  color: var(--jvp-null-color, #8c8c8c);
 }
 
 .jvp-bracket {
-  color: #595959;
+  color: var(--jvp-bracket-color, #595959);
 }
 
 .jvp-summary {
-  color: #8c8c8c;
+  color: var(--jvp-summary-color, #8c8c8c);
   margin: 0 6px;
 }
 
@@ -113,7 +120,7 @@
   padding: 0 4px;
   border: none;
   background: transparent;
-  color: #656d76;
+  color: var(--jvp-copy-color, #656d76);
   font-size: 12px;
   cursor: pointer;
   opacity: 0.75;
@@ -126,7 +133,7 @@
 }
 
 .jvp-link {
-  color: #0969da;
+  color: var(--jvp-link-color, #0969da);
   text-decoration: none;
 }
 

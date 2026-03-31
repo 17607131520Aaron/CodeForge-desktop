@@ -155,6 +155,22 @@
   padding: 12px;
   border-radius: 8px;
   background: #0f172a;
+
+  .json-preview-pro {
+    --jvp-text-color: #dbe7ff;
+    --jvp-key-color: #7dd3fc;
+    --jvp-string-color: #fda4af;
+    --jvp-number-color: #86efac;
+    --jvp-boolean-color: #c4b5fd;
+    --jvp-null-color: #94a3b8;
+    --jvp-bracket-color: #e2e8f0;
+    --jvp-summary-color: #a5b4fc;
+    --jvp-toggle-color: #94a3b8;
+    --jvp-copy-color: #cbd5e1;
+    --jvp-link-color: #60a5fa;
+    --jvp-row-hover-bg: rgb(148 163 184 / 14%);
+    --jvp-mark-bg: #854d0e;
+  }
 }
 
 .network-large-json-preview {

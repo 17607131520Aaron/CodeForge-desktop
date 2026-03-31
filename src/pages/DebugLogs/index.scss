@@ -291,6 +291,22 @@
     color: #858585;
     font-style: italic;
   }
+
+  .json-preview-pro {
+    --jvp-text-color: #d4d4d4;
+    --jvp-key-color: #9cdcfe;
+    --jvp-string-color: #ce9178;
+    --jvp-number-color: #b5cea8;
+    --jvp-boolean-color: #569cd6;
+    --jvp-null-color: #569cd6;
+    --jvp-bracket-color: #d4d4d4;
+    --jvp-summary-color: #858585;
+    --jvp-toggle-color: #858585;
+    --jvp-copy-color: #c5c5c5;
+    --jvp-link-color: #4ea1ff;
+    --jvp-row-hover-bg: rgb(255 255 255 / 4%);
+    --jvp-mark-bg: #5b4a1f;
+  }
 }
 
 // 响应式调整
