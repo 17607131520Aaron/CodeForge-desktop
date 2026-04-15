@@ -78,6 +78,22 @@ pnpm package
 pnpm make
 ```
 
+### macOS 提示“应用已损坏”修复
+
+对于未签名的本地构建包，macOS 可能在首次打开时提示“应用已损坏，建议移到废纸篓”。
+
+可在应用所在目录执行：
+
+```bash
+bash fix_macos_quarantine.command "./AI助理调试工具.app"
+```
+
+或在仓库根目录执行（传入应用路径）：
+
+```bash
+pnpm fix:mac:damaged "/path/to/AI助理调试工具.app"
+```
+
 ## 本地服务说明
 
 应用启动后会在主进程中启动本地 WebSocket 日志服务，默认配置如下：
